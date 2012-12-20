@@ -486,6 +486,7 @@ void V_MarkRect (int x, int y, int width, int height);
 
 // BestColor
 byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors);
+byte BestColor2 (const DWORD *palette, const DWORD color, const int numcolors);
 // Returns the closest color to the one desired. String
 // should be of the form "rr gg bb".
 int V_GetColorFromString (const DWORD *palette, const char *colorstring);

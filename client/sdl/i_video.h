@@ -34,7 +34,7 @@ extern BOOL Fullscreen;
 
 
 // [RH] Set the display mode
-void I_SetMode (int &width, int &height, int &bits);
+BOOL I_SetMode (int &width, int &height, int &bits);
 
 // Returns true if the Video object has been set up and not yet destroyed
 bool I_HardwareInitialized();
@@ -52,6 +52,7 @@ void I_SetOldPalette (byte *doompalette);
 void I_BeginUpdate (void);		// [RH] Locks screen[0]
 void I_FinishUpdate (void);
 void I_FinishUpdateNoBlit (void);
+void I_TempUpdate (void);
 
 // Wait for vertical retrace or pause a bit.
 void I_WaitVBL(int count);
@@ -65,15 +66,15 @@ void I_SetWindowCaption(const std::string& caption);
 void I_SetWindowCaption(void);
 void I_SetWindowIcon(void);
 
-bool I_CheckResolution (int width, int height, int bpp);
-void I_ClosestResolution (int *width, int *height, int bits);
-bool I_SetResolution (int width, int height, int bpp);
+bool I_CheckResolution (int width, int height);
+void I_ClosestResolution (int *width, int *height);
+//bool I_SetResolution (int width, int height, int bpp);
 
 bool I_CheckVideoDriver (const char *name);
 
 bool I_SetOverscan (float scale);
 
-void I_StartModeIterator (int bits);
+void I_StartModeIterator ();
 bool I_NextMode (int *width, int *height);
 
 DCanvas *I_AllocateScreen (int width, int height, int bits, bool primary = false);

@@ -68,9 +68,9 @@ int 			viewangleoffset = 0;
 int 			validcount = 1;
 
 // [RH] colormap currently drawing with
-lighttable_t	*basecolormap;
+shaderef_t		basecolormap;
 int				fixedlightlev;
-lighttable_t	*fixedcolormap;
+shaderef_t		fixedcolormap;
 
 int 			centerx;
 extern "C" {int	centery; }
@@ -674,7 +674,6 @@ void R_InitLightTables (void)
 	int level;
 	int startmap;
 	int scale;
-	int lightmapsize = 8 + (screen->is8bit() ? 0 : 2);
 
 	// Calculate the light levels to use
 	//	for each level / distance combination.
@@ -692,7 +691,7 @@ void R_InitLightTables (void)
 			else if (level >= NUMCOLORMAPS)
 				level = NUMCOLORMAPS-1;
 
-			zlight[i][j] = level << lightmapsize;
+			zlight[i][j] = level;
 		}
 	}
 
@@ -766,7 +765,6 @@ void R_ExecuteSetViewSize (void)
 	int level;
 	int startmap;
 	int virtheight, virtwidth;
-	int lightmapsize = 8 + (screen->is8bit() ? 0 : 2);
 
 	setsizeneeded = false;
 
@@ -894,7 +892,7 @@ void R_ExecuteSetViewSize (void)
 			else if (level >= NUMCOLORMAPS)
 				level = NUMCOLORMAPS-1;
 
-			scalelight[i][j] = level << lightmapsize;
+			scalelight[i][j] = level;
 		}
 	}
 
@@ -1055,10 +1053,12 @@ void R_SetupFrame (player_t *player)
 		newblend = viewz < P_FloorHeight(viewx, viewy, s) ? s->bottommap : 
 					viewz > P_CeilingHeight(viewx, viewy, s) ? s->topmap : s->midmap;
 
+#if 0
 		if (!screen->is8bit())
 			newblend = R_BlendForColormap (newblend);
 		else if (APART(newblend) == 0 && newblend >= numfakecmaps)
 			newblend = 0;
+#endif
 	}
 	else
 	{
@@ -1077,36 +1077,31 @@ void R_SetupFrame (player_t *player)
 			BaseBlendG = GPART(newblend);
 			BaseBlendB = BPART(newblend);
 			BaseBlendA = APART(newblend) / 255.0f;
-			NormalLight.maps = realcolormaps;
+			NormalLight.maps = shaderef_t(&realcolormaps, 0);
 		}
 		else
 		{
-			NormalLight.maps = realcolormaps + (NUMCOLORMAPS+1)*256*newblend;
+			NormalLight.maps = shaderef_t(&realcolormaps, (NUMCOLORMAPS+1)*newblend);
 			BaseBlendR = BaseBlendG = BaseBlendB = 0;
 			BaseBlendA = 0.0f;
 		}
+
+		V_SetBlend(BaseBlendR, BaseBlendG, BaseBlendB, (int)(BaseBlendA * 256));
 	}
 
-	fixedcolormap = NULL;
+	fixedcolormap = shaderef_t();
 	fixedlightlev = 0;
 
 	if (camera == player->mo && player->fixedcolormap)
 	{
 		if (player->fixedcolormap < NUMCOLORMAPS)
 		{
-			fixedlightlev = player->fixedcolormap*256;
-			fixedcolormap = DefaultPalette->maps.colormaps;
+			fixedlightlev = player->fixedcolormap;
+			fixedcolormap = shaderef_t(&DefaultPalette->maps, 0);
 		}
 		else
 		{
-			if (screen->is8bit())
-				fixedcolormap =
-					DefaultPalette->maps.colormaps
-					+ player->fixedcolormap*256;
-			else
-				fixedcolormap = (lighttable_t *)
-					(DefaultPalette->maps.shades
-					+ player->fixedcolormap*256);
+			fixedcolormap = shaderef_t(&DefaultPalette->maps, player->fixedcolormap);
 		}
 
 		walllights = scalelightfixed;

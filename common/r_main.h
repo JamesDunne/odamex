@@ -54,7 +54,7 @@ extern fixed_t			centerxfrac;
 extern fixed_t			centeryfrac;
 extern fixed_t			yaspectmul;
 
-extern byte*			basecolormap;	// [RH] Colormap for sector currently being drawn
+extern shaderef_t		basecolormap;	// [RH] Colormap for sector currently being drawn
 
 extern int				validcount;
 
@@ -78,7 +78,7 @@ extern int				loopcount;
 #define MAXLIGHTZ			   128
 #define LIGHTZSHIFT 			20
 
-// [RH] Changed from lighttable_t* to int.
+// [RH] Changed from shaderef_t* to int.
 extern int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 extern int				scalelightfixed[MAXLIGHTSCALE];
 extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
@@ -86,7 +86,7 @@ extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 extern int				extralight;
 extern BOOL				foggy;
 extern int				fixedlightlev;
-extern lighttable_t*	fixedcolormap;
+extern shaderef_t		fixedcolormap;
 
 extern int				lightscalexmul;	// [RH] for hires lighting fix
 extern int				lightscaleymul;

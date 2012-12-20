@@ -73,58 +73,65 @@ void V_InitConChars (byte transcolor)
 	DCanvas *scrn = I_AllocateScreen(128, 128, 8);
 	DCanvas &temp = *scrn;
 
-	chars = W_CachePatch ("CONCHARS");
-	temp.Lock ();
-
+	if (temp.is8bit())
 	{
-		DWORD *scrn, fill;
+		chars = W_CachePatch ("CONCHARS");
+		temp.Lock ();
 
-		fill = (transcolor << 24) | (transcolor << 16) | (transcolor << 8) | transcolor;
-		for (y = 0; y < 128; y++)
 		{
-			scrn = (DWORD *)(temp.buffer + temp.pitch * y);
-			for (x = 0; x < 128/4; x++)
-			{
-				*scrn++ = fill;
-			}
-		}
-		temp.DrawPatch (chars, 0, 0);
-	}
+			DWORD *scrn, fill;
 
-	src = temp.buffer;
-
-	if ( (ConChars = new byte[256*8*8*2]) )
-	{
-		d = ConChars;
-		for (y = 0; y < 16; y++)
-		{
-			for (x = 0; x < 16; x++)
+			fill = (transcolor << 24) | (transcolor << 16) | (transcolor << 8) | transcolor;
+			for (y = 0; y < 128; y++)
 			{
-				s = src + x * 8 + (y * 8 * temp.pitch);
-				for (z = 0; z < 8; z++)
+				scrn = (DWORD *)(temp.buffer + temp.pitch * y);
+				for (x = 0; x < 128/4; x++)
 				{
-					for (a = 0; a < 8; a++)
+					*scrn++ = fill;
+				}
+			}
+			temp.DrawPatch (chars, 0, 0);
+		}
+
+		src = temp.buffer;
+
+		if ( (ConChars = new byte[256*8*8*2]) )
+		{
+			d = ConChars;
+			for (y = 0; y < 16; y++)
+			{
+				for (x = 0; x < 16; x++)
+				{
+					s = src + x * 8 + (y * 8 * temp.pitch);
+					for (z = 0; z < 8; z++)
 					{
-						v = s[a];
-						if (v == transcolor)
+						for (a = 0; a < 8; a++)
 						{
-							d[a] = 0x00;
-							d[a+8] = 0xff;
+							v = s[a];
+							if (v == transcolor)
+							{
+								d[a] = 0x00;
+								d[a+8] = 0xff;
+							}
+							else
+							{
+								d[a] = v;
+								d[a+8] = 0x00;
+							}
 						}
-						else
-						{
-							d[a] = v;
-							d[a+8] = 0x00;
-						}
+						d += 16;
+						s += temp.pitch;
 					}
-					d += 16;
-					s += temp.pitch;
 				}
 			}
 		}
-	}
 
-	temp.Unlock ();
+		temp.Unlock ();
+	}
+	else
+	{
+		ConChars = new byte[256*8*8*2];
+	}
 	I_FreeScreen(scrn);
 }
 

@@ -50,7 +50,7 @@ class IVideo
 	virtual void ReadScreen (byte *block);
 
 	virtual int GetModeCount ();
-	virtual void StartModeIterator (int bits);
+	virtual void StartModeIterator ();
 	virtual bool NextMode (int *width, int *height);
 
 	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);

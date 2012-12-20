@@ -222,7 +222,8 @@ void D_Display (void)
 	{
 		int oldwidth = screen->width;
 		int oldheight = screen->height;
-		int oldbits = DisplayBits;
+		//int oldbits = DisplayBits;
+		int oldbits = screen->bits;
 
 		// Change screen mode.
 		if (!V_SetResolution (NewWidth, NewHeight, NewBits))

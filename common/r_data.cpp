@@ -758,20 +758,48 @@ static struct FakeCmap {
 } *fakecmaps;
 size_t numfakecmaps;
 int firstfakecmap;
-byte *realcolormaps;
+shademap_t realcolormaps;
 int lastusedcolormap;
+
+void R_ForceDefaultColormap(const char *name)
+{
+	byte *data = (byte *)W_CacheLumpName (name, PU_CACHE);
+
+	memcpy (realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
+
+#if 0
+	// Setup shademap to mirror colormapped colors:
+	for (int m = 0; m < (NUMCOLORMAPS+1); ++m)
+		for (int c = 0; c < 256; ++c)
+			realcolormaps.shademap[m*256+c] = V_Palette[realcolormaps.colormap[m*256+c]];
+#else
+	BuildDefaultShademap (DefaultPalette, realcolormaps);
+#endif
+
+	strncpy (fakecmaps[0].name, name, 9); // denis - todo - string limit?
+	std::transform(fakecmaps[0].name, fakecmaps[0].name + strlen(fakecmaps[0].name), fakecmaps[0].name, toupper);
+	fakecmaps[0].blend = 0;
+}
 
 void R_SetDefaultColormap (const char *name)
 {
 	if (strnicmp (fakecmaps[0].name, name, 8))
 	{
-		byte *data = (byte *)W_CacheLumpName (name, PU_CACHE);
-
-		memcpy (realcolormaps, data, (NUMCOLORMAPS+1)*256);
-		strncpy (fakecmaps[0].name, name, 9); // denis - todo - string limit?
-		std::transform(fakecmaps[0].name, fakecmaps[0].name + strlen(fakecmaps[0].name), fakecmaps[0].name, toupper);
-		fakecmaps[0].blend = 0;
+		R_ForceDefaultColormap(name);
 	}
+}
+
+void R_ReinitColormap()
+{
+	if (fakecmaps == NULL)
+		return;
+
+	const char *name = fakecmaps[0].name;
+
+	if (name[0] == 0)
+		name = "COLORMAP";
+
+	R_ForceDefaultColormap(name);
 }
 
 //
@@ -795,8 +823,8 @@ void R_InitColormaps (void)
 		numfakecmaps = lastfakecmap - firstfakecmap;
 	}
 
-	realcolormaps = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps+255,PU_STATIC,0);
-	realcolormaps = (byte *)(((ptrdiff_t)realcolormaps + 255) & ~255);
+	realcolormaps.colormap = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
+	realcolormaps.shademap = (DWORD *)Z_Malloc (256*sizeof(DWORD)*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
 	fakecmaps = (FakeCmap *)Z_Malloc (sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
 
 	fakecmaps[0].name[0] = 0;
@@ -815,10 +843,13 @@ void R_InitColormaps (void)
 				int k, r, g, b;
 				byte *map = (byte *)W_CacheLumpNum (i, PU_CACHE);
 
-				memcpy (realcolormaps+(NUMCOLORMAPS+1)*256*j,
-						map, (NUMCOLORMAPS+1)*256);
+				byte  *colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
+				DWORD *shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
 
-				if(pal->basecolors)
+				// Copy colormap data:
+				memcpy (colormap, map, (NUMCOLORMAPS+1)*256);
+
+				if (pal->basecolors)
 				{
 					r = RPART(pal->basecolors[*map]);
 					g = GPART(pal->basecolors[*map]);
@@ -830,8 +861,30 @@ void R_InitColormaps (void)
 						g = (g + GPART(pal->basecolors[map[k]])) >> 1;
 						b = (b + BPART(pal->basecolors[map[k]])) >> 1;
 					}
-					fakecmaps[j].blend = MAKEARGB (255, r, g, b);
+					// NOTE(jsd): This alpha value is used for 32bpp in water areas.
+					fakecmaps[j].blend = MAKEARGB (128, r, g, b);
+
+#if 0
+					// Set up shademap for the colormap:
+					for (k = 0; k < 256; ++k)
+					{
+						DWORD c = pal->colors[*map];
+						shademap[k] = alphablend1a(c, fakecmaps[j].blend, j * (255 / numfakecmaps));
+					}
+#endif
 				}
+#if 0
+				else
+				{
+#endif
+					// Set up shademap for the colormap:
+					for (k = 0; k < 256; ++k)
+					{
+						shademap[k] = V_Palette[colormap[k]];
+					}
+#if 0
+				}
+#endif
 			}
 		}
 	}
@@ -1103,6 +1156,10 @@ byte BestColor (const DWORD *palette, const int r, const int g, const int b, con
 	return bestcolor;
 }
 
+byte BestColor2 (const DWORD *palette, const DWORD color, const int numcolors)
+{
+	return BestColor(palette, RPART(color), GPART(color), BPART(color), numcolors);
+}
 
 VERSION_CONTROL (r_data_cpp, "$Id$")
 

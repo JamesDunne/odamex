@@ -25,6 +25,9 @@
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
+#include "SDL_cpuinfo.h"
+#include "r_intrin.h"
+
 #include "r_defs.h"
 
 extern "C" byte**		ylookup;
@@ -32,8 +35,7 @@ extern "C" int*			columnofs;
 
 extern "C" int			dc_pitch;		// [RH] Distance between rows
 
-extern "C" lighttable_t*	dc_colormap;
-extern "C" unsigned int*	dc_shademap;	// [RH] For high/true color modes
+extern "C" shaderef_t	dc_colormap;
 extern "C" int			dc_x;
 extern "C" int			dc_yl;
 extern "C" int			dc_yh;
@@ -80,33 +82,61 @@ extern void (*R_DrawSlopeSpan)(void);
 extern void (*R_DrawColumnHoriz)(void);
 void R_DrawMaskedColumnHoriz(tallpost_t *post);
 
-// [RH] Initialize the above five pointers
-void R_InitColumnDrawers (BOOL is8bit);
+// [RH] Initialize the above function pointers
+void R_InitColumnDrawers ();
+
+void R_InitDrawers ();
+
+void	R_DrawColumnHorizP (void);
+void	R_DrawColumnP (void);
+void	R_DrawFuzzColumnP (void);
+void	R_DrawTranslucentColumnP (void);
+void	R_DrawTranslatedColumnP (void);
+void	R_DrawSpanP (void);
+void	R_DrawSlopeSpanIdealP_C (void);
+
+void	R_DrawColumnD (void);
+void	R_DrawFuzzColumnD (void);
+void	R_DrawTranslucentColumnD (void);
+void	R_DrawTranslatedColumnD (void);
+
+void	R_DrawTlatedLucentColumnP (void);
+#define R_DrawTlatedLucentColumn R_DrawTlatedLucentColumnP
+void	R_StretchColumnP (void);
+#define R_StretchColumn R_StretchColumnP
+
+void	R_BlankColumn (void);
+void	R_FillColumnP (void);
+void	R_FillColumnHorizP (void);
+void	R_FillSpan (void);
 
 // [RH] Moves data from the temporary horizontal buffer to the screen.
-void rt_copy1col_c (int hx, int sx, int yl, int yh);
-void rt_copy2cols_c (int hx, int sx, int yl, int yh);
-void rt_copy4cols_c (int sx, int yl, int yh);
-void rt_map1col_c (int hx, int sx, int yl, int yh);
-void rt_map2cols_c (int hx, int sx, int yl, int yh);
-void rt_map4cols_c (int sx, int yl, int yh);
-void rt_lucent1col (int hx, int sx, int yl, int yh);
-void rt_lucent2cols (int hx, int sx, int yl, int yh);
-void rt_lucent4cols (int sx, int yl, int yh);
-void rt_tlate1col (int hx, int sx, int yl, int yh);
-void rt_tlate2cols (int hx, int sx, int yl, int yh);
-void rt_tlate4cols (int sx, int yl, int yh);
-void rt_tlatelucent1col (int hx, int sx, int yl, int yh);
-void rt_tlatelucent2cols (int hx, int sx, int yl, int yh);
-void rt_tlatelucent4cols (int sx, int yl, int yh);
+void rt_copy1colP (int hx, int sx, int yl, int yh);
+void rt_copy2colsP (int hx, int sx, int yl, int yh);
+void rt_copy4colsP (int sx, int yl, int yh);
+void rt_map1colP (int hx, int sx, int yl, int yh);
+void rt_map2colsP (int hx, int sx, int yl, int yh);
+void rt_map4colsP (int sx, int yl, int yh);
+void rt_lucent1colP (int hx, int sx, int yl, int yh);
+void rt_lucent2colsP (int hx, int sx, int yl, int yh);
+void rt_lucent4colsP (int sx, int yl, int yh);
+void rt_tlate1colP (int hx, int sx, int yl, int yh);
+void rt_tlate2colsP (int hx, int sx, int yl, int yh);
+void rt_tlate4colsP (int sx, int yl, int yh);
+void rt_tlatelucent1colP (int hx, int sx, int yl, int yh);
+void rt_tlatelucent2colsP (int hx, int sx, int yl, int yh);
+void rt_tlatelucent4colsP (int sx, int yl, int yh);
 
-extern void (*rt_map4cols)(int sx, int yl, int yh);
-
-#define rt_copy1col		rt_copy1col_c
-#define rt_copy2cols	rt_copy2cols_c
-#define rt_copy4cols	rt_copy4cols_c
-#define rt_map1col		rt_map1col_c
-#define rt_map2cols		rt_map2cols_c
+void rt_copy1colD_c (int hx, int sx, int yl, int yh);
+void rt_copy2colsD_c (int hx, int sx, int yl, int yh);
+void rt_map1colD_c (int hx, int sx, int yl, int yh);
+void rt_map2colsD_c (int hx, int sx, int yl, int yh);
+void rt_lucent1colD_c (int hx, int sx, int yl, int yh);
+void rt_lucent2colsD_c (int hx, int sx, int yl, int yh);
+void rt_tlate1colD_c (int hx, int sx, int yl, int yh);
+void rt_tlate2colsD_c (int hx, int sx, int yl, int yh);
+void rt_tlatelucent1colD_c (int hx, int sx, int yl, int yh);
+void rt_tlatelucent2colsD_c (int hx, int sx, int yl, int yh);
 
 void rt_draw1col (int hx, int sx);
 void rt_draw2cols (int hx, int sx);
@@ -115,30 +145,73 @@ void rt_draw4cols (int sx);
 // [RH] Preps the temporary horizontal buffer.
 void rt_initcols (void);
 
+// Vectorizable functions:
+void rt_copy4colsD_c (int sx, int yl, int yh);
+void rt_map4colsD_c (int sx, int yl, int yh);
+void rt_lucent4colsD_c (int sx, int yl, int yh);
+void rt_tlate4colsD_c (int sx, int yl, int yh);
+void rt_tlatelucent4colsD_c (int sx, int yl, int yh);
 
-void	R_DrawColumnHorizP_C (void);
-void	R_DrawColumnP_C (void);
-void	R_DrawFuzzColumnP_C (void);
-void	R_DrawTranslucentColumnP_C (void);
-void	R_DrawTranslatedColumnP_C (void);
-void	R_DrawSpanP_C (void);
-void	R_DrawSlopeSpanIdealP_C (void);
+void R_DrawSpanD_c(void);
+void r_dimpatchD_c(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 
-void	R_DrawColumnD_C (void);
-void	R_DrawFuzzColumnD_C (void);
-void	R_DrawTranslucentColumnD_C (void);
-void	R_DrawTranslatedColumnD_C (void);
-void	R_DrawSpanD (void);
+#ifdef __SSE2__
+void rt_copy4colsD_SSE2 (int sx, int yl, int yh);
+void rt_map4colsD_SSE2 (int sx, int yl, int yh);
+void rt_lucent4colsD_SSE2 (int sx, int yl, int yh);
+void rt_tlate4colsD_SSE2 (int sx, int yl, int yh);
+void rt_tlatelucent4colsD_SSE2 (int sx, int yl, int yh);
 
-void	R_DrawTlatedLucentColumnP_C (void);
-#define R_DrawTlatedLucentColumn R_DrawTlatedLucentColumnP_C
-void	R_StretchColumnP_C (void);
-#define R_StretchColumn R_StretchColumnP_C
+void R_DrawSpanD_SSE2(void);
+void r_dimpatchD_SSE2(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+#endif
+#ifdef __MMX__
+void rt_copy4colsD_MMX (int sx, int yl, int yh);
+void rt_map4colsD_MMX (int sx, int yl, int yh);
+void rt_lucent4colsD_MMX (int sx, int yl, int yh);
+void rt_tlate4colsD_MMX (int sx, int yl, int yh);
+void rt_tlatelucent4colsD_MMX (int sx, int yl, int yh);
 
-void	R_BlankColumn (void);
-void	R_FillColumnP (void);
-void	R_FillColumnHorizP (void);
-void	R_FillSpan (void);
+void R_DrawSpanD_MMX(void);
+void r_dimpatchD_MMX(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+#endif
+#ifdef __ALTIVEC__
+void rt_copy4colsD_ALTIVEC (int sx, int yl, int yh);
+void rt_map4colsD_ALTIVEC (int sx, int yl, int yh);
+void rt_lucent4colsD_ALTIVEC (int sx, int yl, int yh);
+void rt_tlate4colsD_ALTIVEC (int sx, int yl, int yh);
+void rt_tlatelucent4colsD_ALTIVEC (int sx, int yl, int yh);
+
+void R_DrawSpanD_ALTIVEC(void);
+void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+#endif
+
+// Palettized (8bpp) vs. Direct (32bpp) switchable function pointers:
+extern void (*rt_copy1col) (int hx, int sx, int yl, int yh);
+extern void (*rt_copy2cols) (int hx, int sx, int yl, int yh);
+extern void (*rt_copy4cols) (int sx, int yl, int yh);
+extern void (*rt_map1col) (int hx, int sx, int yl, int yh);
+extern void (*rt_map2cols) (int hx, int sx, int yl, int yh);
+extern void (*rt_map4cols) (int sx, int yl, int yh);
+extern void (*rt_lucent1col) (int hx, int sx, int yl, int yh);
+extern void (*rt_lucent2cols) (int hx, int sx, int yl, int yh);
+extern void (*rt_lucent4cols) (int sx, int yl, int yh);
+extern void (*rt_tlate1col) (int hx, int sx, int yl, int yh);
+extern void (*rt_tlate2cols) (int hx, int sx, int yl, int yh);
+extern void (*rt_tlate4cols) (int sx, int yl, int yh);
+extern void (*rt_tlatelucent1col) (int hx, int sx, int yl, int yh);
+extern void (*rt_tlatelucent2cols) (int hx, int sx, int yl, int yh);
+extern void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
+
+// Vectorizable function pointers:
+extern void (*rt_copy4colsD) (int sx, int yl, int yh);
+extern void (*rt_map4colsD) (int sx, int yl, int yh);
+extern void (*rt_lucent4colsD) (int sx, int yl, int yh);
+extern void (*rt_tlate4colsD) (int sx, int yl, int yh);
+extern void (*rt_tlatelucent4colsD) (int sx, int yl, int yh);
+
+extern void (*R_DrawSpanD)(void);
+extern void (*r_dimpatchD)(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 
 extern "C" int				ds_colsize;		// [RH] Distance between columns
 
@@ -146,7 +219,7 @@ extern "C" int				ds_y;
 extern "C" int				ds_x1;
 extern "C" int				ds_x2;
 
-extern "C" lighttable_t*	ds_colormap;
+extern "C" shaderef_t		ds_colormap;
 
 extern "C" dsfixed_t		ds_xfrac;
 extern "C" dsfixed_t		ds_yfrac;
@@ -165,7 +238,7 @@ extern "C" double			ds_iustep;
 extern "C" double			ds_ivstep;
 extern "C" double			ds_id;
 extern "C" double			ds_idstep;
-extern "C" byte				*slopelighting[MAXWIDTH];
+extern "C" shaderef_t		slopelighting[MAXWIDTH];
 
 extern byte*			translationtables;
 extern byte*			dc_translation;

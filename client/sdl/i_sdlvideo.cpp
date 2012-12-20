@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+// Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -84,11 +84,11 @@ SDLVideo::SDLVideo(int parm)
     if (hIcon)
     {
         HWND WindowHandle;
-
+        
         SDL_SysWMinfo wminfo;
         SDL_VERSION(&wminfo.version)
         SDL_GetWMInfo(&wminfo);
-
+        
         WindowHandle = wminfo.window;
 
         SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
@@ -98,68 +98,64 @@ SDLVideo::SDLVideo(int parm)
 
     I_SetWindowCaption();
 
-   sdlScreen = NULL;
-   infullscreen = false;
-   screenw = screenh = screenbits = 0;
-   palettechanged = false;
+	sdlScreen = NULL;
+	infullscreen = false;
+	screenw = screenh = screenbits = 0;
+	palettechanged = false;
 
-   chainHead = new cChain(NULL);
+	chainHead = new cChain(NULL);
 
-   // Get Video modes
-   SDL_PixelFormat fmt;
-   fmt.palette = NULL;
-   fmt.BitsPerPixel = 8;
-   fmt.BytesPerPixel = 1;
+	// Get Video modes
+	vidModeIterator = 0;
+	vidModeList.clear();
 
-   SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
+	// NOTE(jsd): We only support 32-bit and 8-bit color modes. No 24-bit or 16-bit.
 
-   vidModeIterator = 0;
-   vidModeIteratorBits = 8;
-   vidModeList.clear();
+	// Fetch the list of fullscreen modes for this bpp setting:
+	SDL_Rect **sdllist = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_SWSURFACE);
 
-   if(!sdllist)
-   {
-	  // no fullscreen modes, but we could still try windowed
-	  Printf(PRINT_HIGH, "SDL_ListModes returned NULL. No fullscreen video modes are available.\n");
-	  return;
-   }
-   else if(sdllist == (SDL_Rect **)-1)
-   {
-      I_FatalError("SDL_ListModes returned -1. Internal error.\n");
-      return;
-   }
-   else
-   {
-      vidMode_t CustomVidModes[] =
-      {
-         { 640, 480, 8 }
-        ,{ 640, 400, 8 }
-        ,{ 320, 240, 8 }
-        ,{ 320, 200, 8 }
-      };
+	if (!sdllist)
+	{
+		// no fullscreen modes, but we could still try windowed
+		Printf(PRINT_HIGH, "No fullscreen video modes are available.\n");
+		return;
+	}
+	else if(sdllist == (SDL_Rect **)-1)
+	{
+		I_FatalError("SDL_ListModes returned -1. Internal error.\n");
+		return;
+	}
+	else
+	{
+		vidMode_t CustomVidModes[] =
+		{
+			 { 640, 480 }
+			,{ 640, 400 }
+			,{ 320, 240 }
+			,{ 320, 200 }
+		};
 
-      // Add in generic video modes reported by SDL
-      for(int i = 0; sdllist[i]; ++i)
-      {
-        vidMode_t vm;
+		// Add in generic video modes reported by SDL
+		for (int i = 0; sdllist[i]; ++i)
+		{
+			vidMode_t vm;
 
-        vm.width = sdllist[i]->w;
-        vm.height = sdllist[i]->h;
-        vm.bits = 8;
+			vm.width = sdllist[i]->w;
+			vm.height = sdllist[i]->h;
 
-        vidModeList.push_back(vm);
-      }
+			vidModeList.push_back(vm);
+		}
 
-      // Now custom video modes to be added
-      for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
-        vidModeList.push_back(CustomVidModes[i]);
+		// Now custom video modes to be added
+		for (size_t i = 0; i < STACKARRAY_LENGTH(CustomVidModes); ++i)
+			vidModeList.push_back(CustomVidModes[i]);
+	}
 
-      // Reverse sort the modes
-      std::sort(vidModeList.begin(), vidModeList.end(), std::greater<vidMode_t>());
+	// Reverse sort the modes
+	std::sort(vidModeList.begin(), vidModeList.end(), std::greater<vidMode_t>());
 
-      // Get rid of any duplicates (SDL some times reports duplicates as well)
-      vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
-   }
+	// Get rid of any duplicates (SDL some times reports duplicates as well)
+	vidModeList.erase(std::unique(vidModeList.begin(), vidModeList.end()), vidModeList.end());
 }
 
 SDLVideo::~SDLVideo(void)
@@ -233,35 +229,35 @@ bool SDLVideo::SetOverscan (float scale)
 
 bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
 {
-   Uint32 flags = SDL_RESIZABLE;
-   int sbits = bits;
+	Uint32 flags = SDL_RESIZABLE;
+	int sbits = bits;
 
-   // SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
-   // just ganna let SDL decide.
+	// SoM: I'm not sure if we should request a software or hardware surface yet... So I'm
+	// just ganna let SDL decide.
 
-   if(fs && !vidModeList.empty())
-   {
-      flags = 0;
+	if(fs && !vidModeList.empty())
+	{
+		flags = 0;
 
-      flags |= SDL_FULLSCREEN;
+		flags |= SDL_FULLSCREEN;
 
-      if(bits == 8)
-         flags |= SDL_HWPALETTE;
-   }
+		if(bits == 8)
+			flags |= SDL_HWPALETTE;
+	}
 
-   // fullscreen directx requires a 32-bit mode to fix broken palette
-   // [Russell] - Use for gdi as well, fixes d2 map02 water
-   if (fs)
-      sbits = 32;
+	// fullscreen directx requires a 32-bit mode to fix broken palette
+	// [Russell] - Use for gdi as well, fixes d2 map02 water
+	if (fs)
+		sbits = 32;
 
-   if(!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
-      return false;
+	if(!(sdlScreen = SDL_SetVideoMode(width, height, sbits, flags)))
+		return false;
 
-   screenw = width;
-   screenh = height;
-   screenbits = bits;
+	screenw = width;
+	screenh = height;
+	screenbits = bits;
 
-   return true;
+	return true;
 }
 
 
@@ -278,11 +274,11 @@ void SDLVideo::SetPalette (DWORD *palette)
 }
 
 void SDLVideo::SetOldPalette (byte *doompalette)
-{
+{ 
     //for(size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
     int i;
     for (i = 0; i < 256; ++i)
-    {
+    {    
       newPalette[i].r = newgamma[*doompalette++];
       newPalette[i].g = newgamma[*doompalette++];
       newPalette[i].b = newgamma[*doompalette++];
@@ -331,7 +327,7 @@ void SDLVideo::ReadScreen (byte *block)
       block += sdlScreen->w;
       source += sdlScreen->pitch;
    }
-
+   
    if(unlock)
       SDL_UnlockSurface(sdlScreen);
 }
@@ -339,50 +335,39 @@ void SDLVideo::ReadScreen (byte *block)
 
 int SDLVideo::GetModeCount ()
 {
-   return vidModeList.size();
+	return vidModeList.size();
 }
 
 
-void SDLVideo::StartModeIterator (int bits)
+void SDLVideo::StartModeIterator ()
 {
-   vidModeIterator = 0;
-   vidModeIteratorBits = bits;
+	vidModeIterator = 0;
 }
-
 
 bool SDLVideo::NextMode (int *width, int *height)
 {
-   std::vector<vidMode_t>::iterator it;
+	std::vector<vidMode_t>::iterator it;
 
-   it = vidModeList.begin() + vidModeIterator;
+	it = vidModeList.begin() + vidModeIterator;
+	if (it == vidModeList.end())
+		return false;
 
-   while(it != vidModeList.end())
-   {
-      vidMode_t vm = *it;
+	vidMode_t vm = *it;
 
-      if(vm.bits == vidModeIteratorBits)
-      {
-         *width = vm.width;
-         *height = vm.height;
-         vidModeIterator++;
-         return true;
-      }
-
-      vidModeIterator++;
-
-      ++it;
-   }
-   return false;
+	*width = vm.width;
+	*height = vm.height;
+	vidModeIterator++;
+	return true;
 }
 
 
 DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primary)
 {
 	DCanvas *scrn = new DCanvas;
-
+	
 	scrn->width = width;
 	scrn->height = height;
-	scrn->bits = screenbits;
+	scrn->bits = bits;
 	scrn->m_LockCount = 0;
 	scrn->m_Palette = NULL;
 	scrn->buffer = NULL;
@@ -415,7 +400,7 @@ DCanvas *SDLVideo::AllocateSurface (int width, int height, int bits, bool primar
 	  nnode->linkTo(chainHead);
 	}
 
-	return scrn;
+	return scrn;   
 }
 
 
@@ -444,7 +429,7 @@ void SDLVideo::ReleaseSurface (DCanvas *scrn)
          break;
       }
    }
-
+   
    delete scrn;
 }
 
@@ -461,7 +446,7 @@ void SDLVideo::LockSurface (DCanvas *scrn)
 
       scrn->m_LockCount ++;
    }
-
+   
    scrn->buffer = (unsigned char *)s->pixels;
 }
 

@@ -40,10 +40,6 @@
 
 #include "dthinker.h"
 
-
-
-
-
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
 #define SIL_NONE				0
@@ -242,6 +238,41 @@ struct sector_s
 };
 typedef struct sector_s sector_t;
 
+
+
+typedef struct {
+	byte	*colormap;          // Colormap for 8-bit
+	DWORD	*shademap;          // ARGB8888 values for 32-bit
+} shademap_t;
+
+// This represents a clean reference to a map of both 8-bit colors and 32-bit shades.
+struct shaderef_t {
+private:
+	const shademap_t *m_colors;     // The color/shade map to use
+	int               m_mapnum;     // Which index into the color/shade map to use
+
+public:
+	mutable const byte		 *m_colormap;   // Computed colormap pointer
+	mutable const DWORD		 *m_shademap;   // Computed shademap pointer
+
+public:
+	shaderef_t();
+	shaderef_t(const shaderef_t &other);
+	shaderef_t(const shademap_t * const colors, const int mapnum);
+
+	// Determines if m_colors is NULL
+	bool isValid() const;
+
+	shaderef_t with(const int mapnum) const;
+
+	byte  index(const byte c) const;
+	DWORD shade(const byte c) const;
+	DWORD shadenoblend(const byte c) const;
+	const shademap_t *map() const;
+	const int mapnum() const;
+
+	bool operator==(const shaderef_t &other) const;
+};
 
 
 //
@@ -466,8 +497,6 @@ typedef struct tallpost_s tallpost_t;
 // OTHER TYPES
 //
 
-typedef byte lighttable_t;	// This could be wider for >8 bit display.
-
 struct drawseg_s
 {
 	seg_t*		curline;
@@ -518,6 +547,8 @@ public:
 typedef struct patch_s patch_t;
 
 
+
+
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
 // I.e. a sprite object that is partly visible.
@@ -548,7 +579,7 @@ struct vissprite_s
 
     // for color translation and shadow draw,
     //  maxbright frames as well
-    lighttable_t*	colormap;
+    shaderef_t		colormap;
 
 	int 			mobjflags;
 
@@ -634,7 +665,7 @@ struct visplane_s
 	int			minx;
 	int			maxx;
 
-	byte		*colormap;			// [RH] Support multiple colormaps
+	shaderef_t	colormap;			// [RH] Support multiple colormaps
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation
 

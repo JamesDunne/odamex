@@ -387,7 +387,8 @@ void CTF_DrawHud (void)
 		}
 	}
 
-	if (hasflag) {
+	if (hasflag)
+	{
 		if (tintglow < 15)
 			tintglowtype = tintglow;
 		else if (tintglow < 30)
@@ -399,20 +400,26 @@ void CTF_DrawHud (void)
 		else
 			tintglowtype = 0;
 
-		if (hasflags[0] && hasflags[1]) {
+		DWORD tintColor = 0;
+		if (hasflags[0] && hasflags[1])
+		{
 			if (tintglow < 15 || tintglow > 60)
-				TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
-					(int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));
+				tintColor = MAKERGB((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
 			else
-				TintScreen(BestColor (DefaultPalette->basecolors, 255,
-					(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
+				tintColor = MAKERGB(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
 		}
 		else if (hasflags[0])
-			TintScreen(BestColor (DefaultPalette->basecolors, (int)(255/15)*tintglowtype,
-				(int)(255/15)*tintglowtype, 255, DefaultPalette->numcolors));
+			tintColor = MAKERGB((int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, 255);
 		else if (hasflags[1])
-			TintScreen(BestColor (DefaultPalette->basecolors, 255,
-				(int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype, DefaultPalette->numcolors));
+			tintColor = MAKERGB(255, (int)(255/15)*tintglowtype, (int)(255/15)*tintglowtype);
+
+		if (tintColor != 0)
+		{
+			if (screen->is8bit())
+				TintScreen(BestColor2(DefaultPalette->basecolors, tintColor, DefaultPalette->numcolors));
+			else
+				TintScreen(tintColor);
+		}
 	}
 }
 

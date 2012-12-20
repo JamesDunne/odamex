@@ -136,17 +136,92 @@ DWORD IndexedPalette[256];
 /* Current color blending values */
 int		BlendR, BlendG, BlendB, BlendA;
 
+shaderef_t::shaderef_t() : m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL)
+{
+}
+
+shaderef_t::shaderef_t(const shaderef_t &other) : m_colors(other.m_colors), m_mapnum(other.m_mapnum)
+{
+	if (m_colors != NULL)
+	{
+		if (m_colors->colormap != NULL)
+			m_colormap = m_colors->colormap + (256 * m_mapnum);
+		else
+			m_colormap = NULL;
+
+		if (m_colors->shademap != NULL)
+			m_shademap = m_colors->shademap + (256 * m_mapnum);
+		else
+			m_shademap = NULL;
+	}
+	else
+	{
+		m_colormap = NULL;
+		m_shademap = NULL;
+	}
+}
+
+shaderef_t::shaderef_t(const shademap_t * const colors, const int mapnum) : m_colors(colors), m_mapnum(mapnum)
+{
+	// NOTE(jsd): Arbitrary value picked here because we don't record the max number of colormaps for dynamic ones... or do we?
+	if (m_mapnum >= 256)
+		throw CFatalError("Bad map number");
+
+	if (m_colors != NULL)
+	{
+		if (m_colors->colormap != NULL)
+			m_colormap = m_colors->colormap + (256 * m_mapnum);
+		else
+			m_colormap = NULL;
+
+		if (m_colors->shademap != NULL)
+			m_shademap = m_colors->shademap + (256 * m_mapnum);
+		else
+			m_shademap = NULL;
+	}
+	else
+	{
+		m_colormap = NULL;
+		m_shademap = NULL;
+	}
+}
 
 /**************************/
 /* Gamma correction stuff */
 /**************************/
 
+static int lastgamma = 0;
+bool gamma_initialized = false;
 byte newgamma[256];
-CVAR_FUNC_IMPL (gammalevel)
+
+void gamma_init(float var)
 {
-	static int lastgamma = 0;
 	int i;
 
+	if (var > 5)
+	{
+		// [SL] Use ZDoom's gamma calculation for gamma levels > 5
+		// shifted to transition nicely from vanilla Doom gamma levels
+
+		// I found this formula on the web at
+		// http://panda.mostang.com/sane/sane-gamma.html
+		double invgamma = 1.0 / (lastgamma - 3.5);
+
+		for (i = 0; i < 256; i++)
+			newgamma[i] = (BYTE)(255.0 * pow (i / 255.0, invgamma));
+	}
+	else
+	{
+		// [SL] Use vanilla Doom's gamma table for gamma levels 1 - 5
+		for (i = 0; i < 256; i++)
+			newgamma[i] = gammatable[lastgamma - 1][i];
+	}
+
+	gamma_initialized = true;
+}
+
+CVAR_FUNC_IMPL (gammalevel)
+{
 	if (var <= 0 || var > 9)
 	{
 		// Only gamma values of 1 to 9 are legal.
@@ -159,34 +234,22 @@ CVAR_FUNC_IMPL (gammalevel)
 		// Only recalculate the gamma table if the new gamma
 		// value is different from the old one.
 
-		lastgamma = var;
+		lastgamma = (int)var;
 
-
-		if (var > 5)
-		{
-			// [SL] Use ZDoom's gamma calculation for gamma levels > 5
-			// shifted to transition nicely from vanilla Doom gamma levels
-
-			// I found this formula on the web at
-			// http://panda.mostang.com/sane/sane-gamma.html
-			double invgamma = 1.0 / (lastgamma - 3.5);
-
-			for (i = 0; i < 256; i++)
-				newgamma[i] = (BYTE)(255.0 * pow (i / 255.0, invgamma));
-		}
-		else
-		{	
-			// [SL] Use vanilla Doom's gamma table for gamma levels 1 - 5
-			for (i = 0; i < 256; i++)
-				newgamma[i] = gammatable[lastgamma - 1][i];
-		}
+		gamma_init(var);
 
 		GammaAdjustPalettes ();
-		if (screen && screen->is8bit())
+
+		if (!screen) return;
+		if (screen->is8bit())
 		{
 			DoBlending (DefPal.colors, IndexedPalette, DefPal.numcolors,
 						newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
 			I_SetPalette (IndexedPalette);
+		}
+		else
+		{
+			RefreshPalettes();
 		}
 	}
 }
@@ -220,7 +283,8 @@ bool InternalCreatePalette (palette_t *palette, const char *name, byte *colors,
 	strncpy (palette->name.name, name, 8);
 	palette->flags = flags;
 	palette->usecount = 1;
-	palette->maps.colormaps = NULL;
+	palette->maps.colormap = NULL;
+	palette->maps.shademap = NULL;
 
 	M_Free(palette->basecolors);
 
@@ -404,93 +468,142 @@ static void DoBlending (DWORD *from, DWORD *to, unsigned count, int tor, int tog
 							 b + ((db*toa)>>8));
 		}
 	}
-
 }
 
+static void DoBlendingWithGamma (DWORD *from, DWORD *to, unsigned count, int tor, int tog, int tob, int toa)
+{
+	unsigned i;
 
-void RefreshPalette (palette_t *pal)
+	int dr,dg,db,r,g,b;
+
+	for (i = 0; i < count; i++) {
+		r = RPART(*from);
+		g = GPART(*from);
+		b = BPART(*from);
+		from++;
+		dr = tor - r;
+		dg = tog - g;
+		db = tob - b;
+		*to++ = MAKERGB (newgamma[r + ((dr*toa)>>8)],
+						 newgamma[g + ((dg*toa)>>8)],
+						 newgamma[b + ((db*toa)>>8)]);
+	}
+}
+
+static const float lightScale(float a)
+{
+#if 0
+	// NOTE(jsd): Original linear scale; quite dark.
+	return a;
+#else
+	// NOTE(jsd): Revised inverse logarithmic scale; near-perfect match to COLORMAP lump's scale.
+	// 1 - ((Exp[1] - Exp[a*2-1]) / (Exp[1] - Exp[-1]))
+	static float e1 = exp(1.0f);
+	static float e1sube0 = e1 - exp(-1.0f);
+
+	float newa = (e1 - exp(a * 2 - 1)) / e1sube0;
+	// Clamp:
+	if (newa < 0.0f) newa = 0.0f;
+	if (newa > 1.0f) newa = 1.0f;
+	return 1.0f - newa;
+#endif
+}
+
+void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps)
 {
 	DWORD l,c,r,g,b;
+	byte  *color;
+	DWORD *shade;
 	DWORD colors[256];
 
-	if (screen->is8bit()) {
-		if (pal->flags & PALETTEF_SHADE) {
-			byte *shade;
+	r = newgamma[ RPART(level.fadeto) ];
+	g = newgamma[ GPART(level.fadeto) ];
+	b = newgamma[ BPART(level.fadeto) ];
 
-			r = RPART (level.fadeto);
-			g = GPART (level.fadeto);
-			b = BPART (level.fadeto);
-			if (pal->maps.colormaps && pal->maps.colormaps - pal->colormapsbase >= 256) {
-				M_Free(pal->maps.colormaps);
-			}
-			pal->colormapsbase = (byte *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
-			pal->maps.colormaps = (byte *)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
+	// build normal light mappings
+	for (l = 0; l < NUMCOLORMAPS; l++)
+	{
+		int a = (int)(255 * lightScale(l * (1.0f / NUMCOLORMAPS)));
+		DoBlending (pal->basecolors, colors, pal->numcolors, r, g, b, a);
+		DoBlendingWithGamma (colors, maps.shademap + (l << pal->shadeshift), pal->numcolors, r, g, b, a);
 
-			// build normal light mappings
-			for (l = 0; l < NUMCOLORMAPS; l++) {
-				DoBlending (pal->basecolors, colors, pal->numcolors, r, g, b, l * (256 / NUMCOLORMAPS));
-
-				shade = pal->maps.colormaps + (l << pal->shadeshift);
-				for (c = 0; c < pal->numcolors; c++) {
-					*shade++ = BestColor (pal->basecolors,
-										  RPART(colors[c]),
-										  GPART(colors[c]),
-										  BPART(colors[c]),
-										  pal->numcolors);
-				}
-			}
-
-			// build special maps (e.g. invulnerability)
-			shade = pal->maps.colormaps + (NUMCOLORMAPS << pal->shadeshift);
-			{
-				int grayint;
-
-				for (c = 0; c < pal->numcolors; c++) {
-					grayint = (int)(255.0f * (1.0f -
-						(RPART(pal->basecolors[c]) * 0.00116796875f +
-						 GPART(pal->basecolors[c]) * 0.00229296875f +
-						 BPART(pal->basecolors[c]) * 0.0005625)));
-					*shade++ = BestColor (pal->basecolors, grayint, grayint, grayint, pal->numcolors);
-				}
-			}
-		}
-	} else {
-		if (pal->flags & PALETTEF_SHADE) {
-			r = newgamma[RPART (level.fadeto)];
-			g = newgamma[GPART (level.fadeto)];
-			b = newgamma[BPART (level.fadeto)];
-
-            M_Free(pal->colormapsbase);
-
-			pal->maps.shades = (DWORD *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1)*256*sizeof(DWORD) + 255);
-
-			// build normal light mappings
-			for (l = 0; l < NUMCOLORMAPS; l++) {
-				DoBlending (pal->colors,
-							pal->maps.shades + (l << pal->shadeshift),
-							pal->numcolors,
-							r, g, b,
-							l * (256 / NUMCOLORMAPS));
-			}
-
-			// build special maps (e.g. invulnerability)
-			{
-				DWORD *shade = pal->maps.shades + (NUMCOLORMAPS << pal->shadeshift);
-				int grayint;
-
-				for (c = 0; c < pal->numcolors; c++) {
-					grayint = (int)(255.0f * (1.0f -
-						(RPART(pal->colors[c]) * 0.00116796875f +
-						 GPART(pal->colors[c]) * 0.00229296875f +
-						 BPART(pal->colors[c]) * 0.0005625)));
-					*shade++ = MAKERGB (grayint, grayint, grayint);
-				}
-			}
+		color = maps.colormap + (l << pal->shadeshift);
+		for (c = 0; c < pal->numcolors; c++)
+		{
+			color[c] = BestColor(
+				pal->basecolors,
+				RPART(colors[c]),
+				GPART(colors[c]),
+				BPART(colors[c]),
+				pal->numcolors
+			);
 		}
 	}
 
-	if (pal == &DefPal) {
-		NormalLight.maps = DefPal.maps.colormaps;
+	// build special maps (e.g. invulnerability)
+	int grayint;
+	color = maps.colormap + (NUMCOLORMAPS << pal->shadeshift);
+	shade = maps.shademap + (NUMCOLORMAPS << pal->shadeshift);
+
+	for (c = 0; c < pal->numcolors; c++)
+	{
+		grayint = (int)(255.0f * (1.0f -
+			(RPART(pal->basecolors[c]) * 0.00116796875f +
+			 GPART(pal->basecolors[c]) * 0.00229296875f +
+			 BPART(pal->basecolors[c]) * 0.0005625)));
+		color[c] = BestColor (pal->basecolors, grayint, grayint, grayint, pal->numcolors);
+		shade[c] = MAKERGB(grayint, grayint, grayint);
+	}
+}
+
+void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
+{
+	DWORD l,c,r,g,b;
+	DWORD *shade;
+	DWORD colors[256];
+
+	r = newgamma[ RPART(level.fadeto) ];
+	g = newgamma[ GPART(level.fadeto) ];
+	b = newgamma[ BPART(level.fadeto) ];
+
+	// build normal light mappings
+	for (l = 0; l < NUMCOLORMAPS; l++) {
+		int a = (int)(255 * lightScale(l * (1.0f / NUMCOLORMAPS)));
+		DoBlending (pal->basecolors, colors, pal->numcolors, r, g, b, a);
+		DoBlendingWithGamma (colors, maps.shademap + (l << pal->shadeshift), pal->numcolors, r, g, b, a);
+	}
+
+	// build special maps (e.g. invulnerability)
+	int grayint;
+	shade = maps.shademap + (NUMCOLORMAPS << pal->shadeshift);
+
+	for (c = 0; c < pal->numcolors; c++)
+	{
+		grayint = (int)(255.0f * (1.0f -
+			(RPART(pal->basecolors[c]) * 0.00116796875f +
+			 GPART(pal->basecolors[c]) * 0.00229296875f +
+			 BPART(pal->basecolors[c]) * 0.0005625)));
+		shade[c] = MAKERGB(grayint, grayint, grayint);
+	}
+}
+
+void RefreshPalette (palette_t *pal)
+{
+	if (pal->flags & PALETTEF_SHADE)
+	{
+		if (pal->maps.colormap && pal->maps.colormap - pal->colormapsbase >= 256) {
+			M_Free(pal->maps.colormap);
+		}
+		pal->colormapsbase = (byte *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
+		pal->maps.colormap = (byte *)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
+		pal->maps.shademap = (DWORD *)Realloc (pal->maps.shademap, (NUMCOLORMAPS + 1)*256*sizeof(DWORD) + 255);
+
+		BuildDefaultColorAndShademap(pal, pal->maps);
+	}
+
+	if (pal == &DefPal)
+	{
+		NormalLight.maps = shaderef_t(&DefPal.maps, 0);
 		NormalLight.color = MAKERGB(255,255,255);
 		NormalLight.fade = level.fadeto;
 	}
@@ -512,15 +625,23 @@ void GammaAdjustPalette (palette_t *pal)
 {
 	unsigned i, color;
 
-	if (pal->colors && pal->basecolors) {
-		for (i = 0; i < pal->numcolors; i++) {
-			color = pal->basecolors[i];
-			pal->colors[i] = MAKERGB (
-				newgamma[RPART(color)],
-				newgamma[GPART(color)],
-				newgamma[BPART(color)]
-			);
-		}
+	if (!(pal->colors && pal->basecolors))
+		return;
+
+	if (!gamma_initialized)
+	{
+		gammalevel.Set(1.0f);
+	}
+	// Replacement if gamma isn't set up:
+	//memcpy(pal->colors, pal->basecolors, sizeof(DWORD) * pal->numcolors);
+
+	for (i = 0; i < pal->numcolors; i++) {
+		color = pal->basecolors[i];
+		pal->colors[i] = MAKERGB (
+			newgamma[RPART(color)],
+			newgamma[GPART(color)],
+			newgamma[BPART(color)]
+		);
 	}
 }
 
@@ -560,7 +681,7 @@ void V_ForceBlend (int blendr, int blendg, int blendb, int blenda)
 					newgamma[BlendR], newgamma[BlendG], newgamma[BlendB], BlendA);
 		I_SetPalette (IndexedPalette);
 	} else {
-		RefreshPalettes();
+		// shademap_t::shade takes care of blending
 	}
 }
 
@@ -615,7 +736,7 @@ BEGIN_COMMAND (testfade)
 
 		level.fadeto = color;
 		RefreshPalettes();
-		NormalLight.maps = DefPal.maps.colormaps;
+		NormalLight.maps = shaderef_t(&DefPal.maps, 0);
 	}
 }
 END_COMMAND (testfade)
@@ -696,27 +817,38 @@ void HSVtoRGB (float *r, float *g, float *b, float h, float s, float v)
 /****** Colored Lighting Stuffs (Sorry, 8-bit only) ******/
 
 // Builds NUMCOLORMAPS colormaps lit with the specified color
-void BuildColoredLights (byte *maps, int lr, int lg, int lb, int r, int g, int b)
+void BuildColoredLights (const shademap_t *maps, int lr, int lg, int lb, int r, int g, int b)
 {
 	unsigned int l,c;
-	DWORD colors[256];
-	byte *shade;
+	byte	*color;
+	DWORD *shade;
 
 	// The default palette is assumed to contain the maps for white light.
-	if (!screen->is8bit() || !maps)
+	if (!maps)
 		return;
 
 	// build normal (but colored) light mappings
 	for (l = 0; l < NUMCOLORMAPS; l++) {
+		// Write directly to the shademap for blending:
+		DWORD *colors = maps->shademap + (256 * l);
 		DoBlending (DefPal.basecolors, colors, DefPal.numcolors, r, g, b, l * (256 / NUMCOLORMAPS));
 
-		shade = maps + 256*l;
+		// Build the colormap and shademap:
+		color = maps->colormap + 256*l;
+		shade = maps->shademap + 256*l;
 		for (c = 0; c < 256; c++) {
-			*shade++ = BestColor (DefPal.basecolors,
-								  (RPART(colors[c])*lr)/255,
-								  (GPART(colors[c])*lg)/255,
-								  (BPART(colors[c])*lb)/255,
-								  256);
+			shade[c] = MAKERGB(
+				(RPART(colors[c])*lr)/255,
+				(GPART(colors[c])*lg)/255,
+				(BPART(colors[c])*lb)/255
+			);
+			color[c] = BestColor(
+				DefPal.basecolors,
+				RPART(shade[c]),
+				GPART(shade[c]),
+				BPART(shade[c]),
+				256
+			);
 		}
 	}
 }
@@ -737,14 +869,19 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 
 	// Not found. Create it.
 	colormap = (dyncolormap_t *)Z_Malloc (sizeof(*colormap), PU_LEVEL, 0);
-	colormap->maps = (byte *)Z_Malloc (NUMCOLORMAPS*256+3+255, PU_LEVEL, 0);
-	colormap->maps = (byte *)(((ptrdiff_t)colormap->maps + 255) & ~0xff);
+	shademap_t *maps = new shademap_t();
+	maps->colormap = (byte *)Z_Malloc (NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL, 0);
+	maps->colormap = (byte *)(((ptrdiff_t)maps->colormap + 255) & ~0xff);
+	maps->shademap = (DWORD *)Z_Malloc (NUMCOLORMAPS*256*sizeof(DWORD)+3+255, PU_LEVEL, 0);
+	maps->shademap = (DWORD *)(((ptrdiff_t)maps->shademap + 255) & ~0xff);
+
+	colormap->maps = shaderef_t(maps, 0);
 	colormap->color = color;
 	colormap->fade = fade;
 	colormap->next = NormalLight.next;
 	NormalLight.next = colormap;
 
-	BuildColoredLights (colormap->maps, lr, lg, lb, fr, fg, fb);
+	BuildColoredLights (maps, lr, lg, lb, fr, fg, fb);
 
 	return colormap;
 }
@@ -766,7 +903,7 @@ BEGIN_COMMAND (testcolor)
 		else
 			color = V_GetColorFromString (NULL, argv[1]);
 
-		BuildColoredLights (NormalLight.maps, RPART(color), GPART(color), BPART(color),
+		BuildColoredLights (NormalLight.maps.map(), RPART(color), GPART(color), BPART(color),
 			RPART(level.fadeto), GPART(level.fadeto), BPART(level.fadeto));
 	}
 }
