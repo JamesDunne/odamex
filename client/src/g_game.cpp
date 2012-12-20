@@ -1466,11 +1466,11 @@ void G_DoReborn (player_t &player)
 
 void G_ScreenShot (char *filename)
 {
-   // SoM: THIS CRASHES A LOT
-   if(filename && *filename)
-	   shotfile = filename;
-   else
-      shotfile = "";
+	// SoM: THIS CRASHES A LOT
+	if(filename && *filename)
+		shotfile = filename;
+	else
+		shotfile = "";
 
 	gameaction = ga_screenshot;
 }

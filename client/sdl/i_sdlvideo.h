@@ -54,7 +54,7 @@ class SDLVideo : public IVideo
 	virtual void ReadScreen (byte *block);
 
 	virtual int GetModeCount (void);
-	virtual void StartModeIterator (int bits);
+	virtual void StartModeIterator ();
 	virtual bool NextMode (int *width, int *height);
 
 	virtual DCanvas *AllocateSurface (int width, int height, int bits, bool primary = false);
@@ -64,79 +64,66 @@ class SDLVideo : public IVideo
 	virtual bool Blit (DCanvas *src, int sx, int sy, int sw, int sh,
 					   DCanvas *dst, int dx, int dy, int dw, int dh);
 
+protected:
 
-   protected:
+	class cChain
+	{
+		public:
+		cChain(DCanvas *dc) : canvas(dc) {next = prev = this;}
+		~cChain() {(prev->next = next)->prev = prev;}
 
-   class cChain
-   {
-      public:
-      cChain(DCanvas *dc) : canvas(dc) {next = prev = this;}
-      ~cChain() {(prev->next = next)->prev = prev;}
+		void linkTo(cChain *head)
+		{
+			(next = head->next)->prev = next;
+			(head->next = next)->prev = head;
+		}
 
-      void linkTo(cChain *head)
-      {
-         (next = head->next)->prev = next;
-         (head->next = next)->prev = head;
-      }
+		DCanvas *canvas;
+		cChain *next, *prev;
+	};
 
-      DCanvas *canvas;
-      cChain *next, *prev;
-   };
+	struct vidMode_t
+	{
+		int width, height;
 
-   struct vidMode_t
-   {
-      int width, height, bits;
+		bool operator<(const vidMode_t& right) const
+		{
+			if (width < right.width)
+				return true;
+			else if (width == right.width && height < right.height)
+				return true;
+			return false;
+		}
 
-      bool operator<(const vidMode_t& right) const
-      {
-         if (bits < right.bits)
-            return true;
-         else if (bits == right.bits)
-         {
-            if (width < right.width)
-               return true;
-            else if (width == right.width && height < right.height)
-               return true;
-         }
-         return false;
-      }
-
-      bool operator>(const vidMode_t& right) const
-      {
-         if (bits > right.bits)
-            return true;
-		 else if (bits == right.bits)
-         {
-            if (width > right.width)
-               return true;
+		bool operator>(const vidMode_t& right) const
+		{
+			if (width > right.width)
+				return true;
 			else if (width == right.width && height > right.height)
-               return true;
-		 }
-         return false;
-      }
+				return true;
+			return false;
+		}
 
-      bool operator==(const vidMode_t& right) const
-      {
-         return (width == right.width &&
-                 height == right.height &&
-                 bits == right.bits);
-      }
-   };
+		bool operator==(const vidMode_t& right) const
+		{
+			return (width == right.width &&
+					height == right.height);
+		}
+	};
 
-   std::vector<vidMode_t> vidModeList;
-   size_t vidModeIterator;
-   int vidModeIteratorBits;
+	std::vector<vidMode_t> vidModeList;
+	size_t vidModeIterator;
 
-   SDL_Surface *sdlScreen;
-   bool infullscreen;
-   int screenw, screenh;
-   int screenbits;
+	SDL_Surface *sdlScreen;
+	bool infullscreen;
+	int screenw, screenh;
+	int screenbits;
 
-   SDL_Color newPalette[256];
-   SDL_Color palette[256];
-   bool palettechanged;
+	SDL_Color newPalette[256];
+	SDL_Color palette[256];
+	bool palettechanged;
 
-   cChain      *chainHead;
+	cChain      *chainHead;
 };
 #endif
 

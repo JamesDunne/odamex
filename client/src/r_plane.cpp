@@ -171,8 +171,8 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 
 	if (fixedlightlev)
 		for (int i = 0; i < len; i++)
-			slopelighting[i] = basecolormap + fixedlightlev;
-	else if (fixedcolormap)
+			slopelighting[i] = basecolormap.with(fixedlightlev);
+	else if (fixedcolormap.isValid())
 		for (int i = 0; i < len; i++)
 			slopelighting[i] = fixedcolormap;
 	else
@@ -189,14 +189,14 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 		{
 			int index = (int)(map >> FRACBITS) + 1;
 			index -= (foggy ? 0 : extralight << 2);
-			
+
 			if (index < 0)
 				slopelighting[i] = basecolormap;
 			else if (index >= NUMCOLORMAPS)
-				slopelighting[i] = basecolormap + 256 * (NUMCOLORMAPS - 1);
+				slopelighting[i] = basecolormap.with((NUMCOLORMAPS - 1));
 			else
-				slopelighting[i] = basecolormap + 256 * index;
-			
+				slopelighting[i] = basecolormap.with(index);
+
 			map += step;
 		}
 	}
@@ -246,8 +246,8 @@ void R_MapLevelPlane(int y, int x1, int x2)
 	ds_yfrac <<= 10;
 
 	if (fixedlightlev)
-		ds_colormap = basecolormap + fixedlightlev;
-	else if (fixedcolormap)
+		ds_colormap = basecolormap.with(fixedlightlev);
+	else if (fixedcolormap.isValid())
 		ds_colormap = fixedcolormap;
 	else
 	{
@@ -257,7 +257,7 @@ void R_MapLevelPlane(int y, int x1, int x2)
 		if (index >= MAXLIGHTZ)
 			index = MAXLIGHTZ-1;
 
-		ds_colormap = planezlight[index] + basecolormap;
+		ds_colormap = basecolormap.with(planezlight[index]);
 	}
 
 	ds_y = y;
@@ -774,8 +774,8 @@ void R_DrawPlanes (void)
 				}
 
 				if (fixedlightlev) {
-					dc_colormap = DefaultPalette->maps.colormaps + fixedlightlev;
-				} else if (fixedcolormap) {
+					dc_colormap = shaderef_t(&DefaultPalette->maps, fixedlightlev);
+				} else if (fixedcolormap.isValid()) {
 					if (r_skypalette)
 					{
 						dc_colormap = fixedcolormap;
@@ -784,10 +784,10 @@ void R_DrawPlanes (void)
 					{
 						// [SL] 2011-06-28 - Emulate vanilla Doom's handling of skies
 						// when the player has the invulnerability powerup
-						dc_colormap = DefaultPalette->maps.colormaps;
+						dc_colormap = shaderef_t(&DefaultPalette->maps, 0);
 					}
-				} else if (!fixedcolormap) {
-					dc_colormap = DefaultPalette->maps.colormaps;
+				} else if (!fixedcolormap.isValid()) {
+					dc_colormap = shaderef_t(&DefaultPalette->maps, 0);
 					colfunc = R_StretchColumn;
 					hcolfunc_post1 = rt_copy1col;
 					hcolfunc_post2 = rt_copy2cols;
