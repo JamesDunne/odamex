@@ -207,13 +207,11 @@ void rt_map4colsD_MMX (int sx, int yl, int yh)
 
 void rt_tlate4colsD_MMX (int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	DWORD *dest;
 	int count;
 	int pitch;
 
-	translation = dc_translation;
 	count = yh-yl;
 	if (count < 0)
 		return;
@@ -237,13 +235,13 @@ void rt_tlate4colsD_MMX (int sx, int yl, int yh)
 
 	do {
 		const __m64 shaded1a = _mm_setr_pi32(
-			dc_colormap.shadenoblend(translation[source[0]]),
-			dc_colormap.shadenoblend(translation[source[1]])
+			dc_colormap.tlatenoblend(source[0], dc_translation),
+			dc_colormap.tlatenoblend(source[1], dc_translation)
 		);
 		const __m64 final1a = blend2vs1_mmx(shaded1a, blendMult, blendInvAlpha, upper8mask);
 		const __m64 shaded1b = _mm_setr_pi32(
-			dc_colormap.shadenoblend(translation[source[2]]),
-			dc_colormap.shadenoblend(translation[source[3]])
+			dc_colormap.tlatenoblend(source[2], dc_translation),
+			dc_colormap.tlatenoblend(source[3], dc_translation)
 		);
 		const __m64 final1b = blend2vs1_mmx(shaded1b, blendMult, blendInvAlpha, upper8mask);
 		dest[0] = _mm_cvtsi64_si32(_mm_srli_si64(final1a, 32*0));
@@ -337,7 +335,6 @@ void rt_lucent4colsD_MMX (int sx, int yl, int yh)
 
 void rt_tlatelucent4colsD_MMX (int sx, int yl, int yh)
 {
-	byte  *translation;
 	byte  *source;
 	DWORD *dest;
 	int count;
@@ -359,7 +356,6 @@ void rt_tlatelucent4colsD_MMX (int sx, int yl, int yh)
 		bga = 256 - fga;
 	}
 
-	translation = dc_translation;
 	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4];
 	pitch = dc_pitch / sizeof(DWORD);
@@ -378,13 +374,13 @@ void rt_tlatelucent4colsD_MMX (int sx, int yl, int yh)
 
 	do {
 		const __m64 shaded1a = _mm_setr_pi32(
-			dc_colormap.shadenoblend(translation[source[0]]),
-			dc_colormap.shadenoblend(translation[source[1]])
+			dc_colormap.tlatenoblend(source[0], dc_translation),
+			dc_colormap.tlatenoblend(source[1], dc_translation)
 		);
 		const __m64 final1a = blend2vs1_mmx(shaded1a, blendMult, blendInvAlpha, upper8mask);
 		const __m64 shaded1b = _mm_setr_pi32(
-			dc_colormap.shadenoblend(translation[source[2]]),
-			dc_colormap.shadenoblend(translation[source[3]])
+			dc_colormap.tlatenoblend(source[2], dc_translation),
+			dc_colormap.tlatenoblend(source[3], dc_translation)
 		);
 		const __m64 final1b = blend2vs1_mmx(shaded1b, blendMult, blendInvAlpha, upper8mask);
 

@@ -84,7 +84,7 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing)
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
-	mobj->translation = translationtables + 256*p->id;
+	mobj->translation = translationref_t(translationtables + 256*p->id, p->id);
 
 	mobj->angle = ANG45 * (mthing->angle/45);
 	mobj->pitch = mobj->roll = 0;

@@ -603,8 +603,9 @@ void R_DrawTranslucentColumnP (void)
 //	of the BaronOfHell, the HellKnight, uses
 //	identical sprites, kinda brightened up.
 //
-byte*	dc_translation;
-byte*	translationtables;
+translationref_t dc_translation;
+byte*	         translationtables;
+DWORD            translationRGB[MAXPLAYERS][16];
 
 void R_DrawTranslatedColumnP (void)
 {
@@ -635,9 +636,6 @@ void R_DrawTranslatedColumnP (void)
 	frac = dc_texturefrac;
 
 	{
-		// [RH] Local copies of global vars to improve compiler optimizations
-		byte *translation = dc_translation;
-
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
@@ -656,7 +654,7 @@ void R_DrawTranslatedColumnP (void)
 
 			do
 			{
-				*dest = dc_colormap.index(translation[source[(frac>>FRACBITS)]]);
+				*dest = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS)]));
 				dest += pitch;
 				
 				if ((frac += fracstep) >= texheight)
@@ -668,7 +666,7 @@ void R_DrawTranslatedColumnP (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = dc_colormap.index(translation[source[(frac>>FRACBITS) & mask]]);
+				*dest = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS) & mask]));
 				dest += pitch;
 
 				frac += fracstep;
@@ -717,8 +715,6 @@ void R_DrawTlatedLucentColumnP (void)
 	frac = dc_texturefrac;
 
 	{
-		byte *translation = dc_translation;
-
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 		byte *source = dc_source;
@@ -737,7 +733,7 @@ void R_DrawTlatedLucentColumnP (void)
 
 			do
 			{
-				unsigned int fg = dc_colormap.index(translation[source[(frac>>FRACBITS)]]);
+				unsigned int fg = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS)]));
 				unsigned int bg = *dest;
 
 				fg = fg2rgb[fg];
@@ -755,7 +751,7 @@ void R_DrawTlatedLucentColumnP (void)
 			// texture height is a power-of-2
 			do
 			{
-				unsigned int fg = dc_colormap.index(translation[source[(frac>>FRACBITS)&mask]]);
+				unsigned int fg = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS)&mask]));
 				unsigned int bg = *dest;
 
 				fg = fg2rgb[fg];
@@ -1294,7 +1290,6 @@ void R_DrawTranslatedColumnD (void)
 	// Here we do an additional index re-mapping.
 	{
 		byte *source = dc_source;
-		byte *translation = dc_translation;
 		int pitch = dc_pitch / sizeof(DWORD);
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
@@ -1312,7 +1307,7 @@ void R_DrawTranslatedColumnD (void)
 
 			do
 			{
-				*dest = dc_colormap.shade(translation[source[(frac>>FRACBITS)]]);
+				*dest = dc_colormap.shade(dc_translation.tlate(source[(frac>>FRACBITS)]));
 				dest += pitch;
 
 				if ((frac += fracstep) >= texheight)
@@ -1324,7 +1319,7 @@ void R_DrawTranslatedColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = dc_colormap.shade(translation[source[(frac>>FRACBITS) & mask]]);
+				*dest = dc_colormap.shade(dc_translation.tlate(source[(frac>>FRACBITS) & mask]));
 				dest += pitch;
 			
 				frac += fracstep;
@@ -1567,17 +1562,27 @@ void R_FreeTranslationTables (void)
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
+	palette_t *pal = GetDefaultPalette();
 	int i;
 	
 	if (color == 1) // Indigo
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
 	else if (color == 2) // Brown
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x40 + (i&0xf);	
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
 	else if (color == 3) // Red
 		for (i = 0x70; i < 0x80; i++)
+		{
 			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
 }
 
 // [RH] Create a player's translation table based on
@@ -1607,6 +1612,14 @@ void R_BuildPlayerTranslation (int player, int color)
 
 	for (i = 0x70; i < 0x80; i++) {
 		HSVtoRGB (&r, &g, &b, h, s, v);
+
+		// Set up RGB values for 32bpp translation:
+		translationRGB[player][i - 0x70] = MAKERGB(
+			(int)(r * 255.0f),
+			(int)(g * 255.0f),
+			(int)(b * 255.0f)
+		);
+
 		table[i] = BestColor (pal->basecolors,
 							  (int)(r * 255.0f),
 							  (int)(g * 255.0f),

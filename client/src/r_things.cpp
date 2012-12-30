@@ -725,8 +725,8 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		used it, but the prefered way to change a thing's colors
 		//		is now with the palette field.
 		translated = true;
-		dc_translation = translationtables + (MAXPLAYERS-1)*256 +
-			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+		dc_translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
+			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) ));
 	}
 
 	if (vis->mobjflags & MF_SHADOW)
@@ -1184,7 +1184,7 @@ void R_DrawPSprite (pspdef_t* psp, unsigned flags)
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->xscale = pspritexscale;
 	vis->yscale = pspriteyscale;
-	vis->translation = NULL;		// [RH] Use default colors
+	vis->translation = translationref_t();		// [RH] Use default colors
 	vis->translucency = FRACUNIT;
 
 	if (flip)
@@ -1723,7 +1723,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->texturemid = FixedMul (yaspectmul, vis->gzt - viewz);
 	vis->x1 = x1 < 0 ? 0 : x1;
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
-	vis->translation = NULL;
+	vis->translation = translationref_t();
 	vis->startfrac = particle->color;
 	vis->patch = NO_PARTICLE;
 	vis->mobjflags = particle->trans;

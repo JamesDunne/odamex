@@ -405,7 +405,6 @@ void rt_map4colsP (int sx, int yl, int yh)
 // Translates one span at hx to the screen at sx.
 void rt_tlate1colP (int hx, int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	byte *dest;
 	int count;
@@ -416,13 +415,12 @@ void rt_tlate1colP (int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	translation = dc_translation;
 	dest = ylookup[yl] + columnofs[sx];
 	source = &dc_temp[yl*4 + hx];
 	pitch = dc_pitch;
 
 	do {
-		*dest = dc_colormap.index(translation[*source]);
+		*dest = dc_colormap.index(dc_translation.tlate(*source));
 		source += 4;
 		dest += pitch;
 	} while (--count);
@@ -431,7 +429,6 @@ void rt_tlate1colP (int hx, int sx, int yl, int yh)
 // Translates two spans at hx and hx+1 to the screen at sx and sx+1.
 void rt_tlate2colsP (int hx, int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	byte *dest;
 	int count;
@@ -442,14 +439,13 @@ void rt_tlate2colsP (int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	translation = dc_translation;
 	dest = ylookup[yl] + columnofs[sx];
 	source = &dc_temp[yl*4 + hx];
 	pitch = dc_pitch;
 
 	do {
-		dest[0] = dc_colormap.index(translation[source[0]]);
-		dest[1] = dc_colormap.index(translation[source[1]]);
+		dest[0] = dc_colormap.index(dc_translation.tlate(source[0]));
+		dest[1] = dc_colormap.index(dc_translation.tlate(source[1]));
 		source += 4;
 		dest += pitch;
 	} while (--count);
@@ -458,13 +454,11 @@ void rt_tlate2colsP (int hx, int sx, int yl, int yh)
 // Translates all four spans to the screen starting at sx.
 void rt_tlate4colsP (int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	byte *dest;
 	int count;
 	int pitch;
 
-	translation = dc_translation;
 	count = yh-yl;
 	if (count < 0)
 		return;
@@ -473,12 +467,12 @@ void rt_tlate4colsP (int sx, int yl, int yh)
 	dest = ylookup[yl] + columnofs[sx];
 	source = &dc_temp[yl*4];
 	pitch = dc_pitch;
-	
+
 	do {
-		dest[0] = dc_colormap.index(translation[source[0]]);
-		dest[1] = dc_colormap.index(translation[source[1]]);
-		dest[2] = dc_colormap.index(translation[source[2]]);
-		dest[3] = dc_colormap.index(translation[source[3]]);
+		dest[0] = dc_colormap.index(dc_translation.tlate(source[0]));
+		dest[1] = dc_colormap.index(dc_translation.tlate(source[1]));
+		dest[2] = dc_colormap.index(dc_translation.tlate(source[2]));
+		dest[3] = dc_colormap.index(dc_translation.tlate(source[3]));
 		source += 4;
 		dest += pitch;
 	} while (--count);
@@ -636,7 +630,6 @@ void rt_lucent4colsP (int sx, int yl, int yh)
 // Translates and mixes one span at hx to the screen at sx.
 void rt_tlatelucent1colP (int hx, int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	byte *dest;
 	int count;
@@ -657,13 +650,12 @@ void rt_tlatelucent1colP (int hx, int sx, int yl, int yh)
 		bg2rgb = Col2RGB8[bglevel>>10];
 	}
 
-	translation = dc_translation;
 	dest = ylookup[yl] + columnofs[sx];
 	source = &dc_temp[yl*4 + hx];
 	pitch = dc_pitch;
 
 	do {
-		unsigned int fg = dc_colormap.index(translation[*source]);
+		unsigned int fg = dc_colormap.index(dc_translation.tlate(*source));
 		unsigned int bg = *dest;
 
 		fg = fg2rgb[fg];
@@ -678,7 +670,6 @@ void rt_tlatelucent1colP (int hx, int sx, int yl, int yh)
 // Translates and mixes two spans at hx and hx+1 to the screen at sx and sx+1.
 void rt_tlatelucent2colsP (int hx, int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	byte *dest;
 	int count;
@@ -699,20 +690,19 @@ void rt_tlatelucent2colsP (int hx, int sx, int yl, int yh)
 		bg2rgb = Col2RGB8[bglevel>>10];
 	}
 
-	translation = dc_translation;
 	dest = ylookup[yl] + columnofs[sx];
 	source = &dc_temp[yl*4 + hx];
 	pitch = dc_pitch;
 
 	do {
-		unsigned int fg = dc_colormap.index(translation[source[0]]);
+		unsigned int fg = dc_colormap.index(dc_translation.tlate(source[0]));
 		unsigned int bg = dest[0];
 		fg = fg2rgb[fg];
 		bg = bg2rgb[bg];
 		fg = (fg+bg) | 0x1f07c1f;
 		dest[0] = RGB32k[0][0][fg & (fg>>15)];
 
-		fg = dc_colormap.index(translation[source[1]]);
+		fg = dc_colormap.index(dc_translation.tlate(source[1]));
 		bg = dest[1];
 		fg = fg2rgb[fg];
 		bg = bg2rgb[bg];
@@ -727,7 +717,6 @@ void rt_tlatelucent2colsP (int hx, int sx, int yl, int yh)
 // Translates and mixes all four spans to the screen starting at sx.
 void rt_tlatelucent4colsP (int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	byte *dest;
 	int count;
@@ -748,34 +737,33 @@ void rt_tlatelucent4colsP (int sx, int yl, int yh)
 		bg2rgb = Col2RGB8[bglevel>>10];
 	}
 
-	translation = dc_translation;
 	dest = ylookup[yl] + columnofs[sx];
 	source = &dc_temp[yl*4];
 	pitch = dc_pitch;
 	
 	do {
-		unsigned int fg = dc_colormap.index(translation[source[0]]);
+		unsigned int fg = dc_colormap.index(dc_translation.tlate(source[0]));
 		unsigned int bg = dest[0];
 		fg = fg2rgb[fg];
 		bg = bg2rgb[bg];
 		fg = (fg+bg) | 0x1f07c1f;
 		dest[0] = RGB32k[0][0][fg & (fg>>15)];
 
-		fg = dc_colormap.index(translation[source[1]]);
+		fg = dc_colormap.index(dc_translation.tlate(source[1]));
 		bg = dest[1];
 		fg = fg2rgb[fg];
 		bg = bg2rgb[bg];
 		fg = (fg+bg) | 0x1f07c1f;
 		dest[1] = RGB32k[0][0][fg & (fg>>15)];
 
-		fg = dc_colormap.index(translation[source[2]]);
+		fg = dc_colormap.index(dc_translation.tlate(source[2]));
 		bg = dest[2];
 		fg = fg2rgb[fg];
 		bg = bg2rgb[bg];
 		fg = (fg+bg) | 0x1f07c1f;
 		dest[2] = RGB32k[0][0][fg & (fg>>15)];
 
-		fg = dc_colormap.index(translation[source[3]]);
+		fg = dc_colormap.index(dc_translation.tlate(source[3]));
 		bg = dest[3];
 		fg = fg2rgb[fg];
 		bg = bg2rgb[bg];
@@ -1039,7 +1027,6 @@ void rt_map4colsD_c (int sx, int yl, int yh)
 
 void rt_tlate1colD_c (int hx, int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	DWORD *dest;
 	int count;
@@ -1050,13 +1037,12 @@ void rt_tlate1colD_c (int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	translation = dc_translation;
 	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		*dest = dc_colormap.shade(translation[*source]);
+		*dest = dc_colormap.tlate(*source, dc_translation);
 		source += 4;
 		dest += pitch;
 	} while (--count);
@@ -1064,7 +1050,6 @@ void rt_tlate1colD_c (int hx, int sx, int yl, int yh)
 
 void rt_tlate2colsD_c (int hx, int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	DWORD *dest;
 	int count;
@@ -1075,14 +1060,13 @@ void rt_tlate2colsD_c (int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	translation = dc_translation;
 	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		dest[0] = dc_colormap.shade(translation[source[0]]);
-		dest[1] = dc_colormap.shade(translation[source[1]]);
+		dest[0] = dc_colormap.tlate(source[0], dc_translation);
+		dest[1] = dc_colormap.tlate(source[1], dc_translation);
 		source += 4;
 		dest += pitch;
 	} while (--count);
@@ -1090,13 +1074,11 @@ void rt_tlate2colsD_c (int hx, int sx, int yl, int yh)
 
 void rt_tlate4colsD_c (int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	DWORD *dest;
 	int count;
 	int pitch;
 
-	translation = dc_translation;
 	count = yh-yl;
 	if (count < 0)
 		return;
@@ -1107,10 +1089,10 @@ void rt_tlate4colsD_c (int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		dest[0] = dc_colormap.shade(translation[source[0]]);
-		dest[1] = dc_colormap.shade(translation[source[1]]);
-		dest[2] = dc_colormap.shade(translation[source[2]]);
-		dest[3] = dc_colormap.shade(translation[source[3]]);
+		dest[0] = dc_colormap.tlate(source[0], dc_translation);
+		dest[1] = dc_colormap.tlate(source[1], dc_translation);
+		dest[2] = dc_colormap.tlate(source[2], dc_translation);
+		dest[3] = dc_colormap.tlate(source[3], dc_translation);
 		source += 4;
 		dest += pitch;
 	} while (--count);
@@ -1249,7 +1231,6 @@ void rt_lucent4colsD_c (int sx, int yl, int yh)
 
 void rt_tlatelucent1colD_c (int hx, int sx, int yl, int yh)
 {
-	byte  *translation;
 	byte  *source;
 	DWORD *dest;
 	int count;
@@ -1272,13 +1253,12 @@ void rt_tlatelucent1colD_c (int hx, int sx, int yl, int yh)
 		bga = 256 - fga;
 	}
 
-	translation = dc_translation;
 	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		DWORD fg = dc_colormap.shade(translation[*source]);
+		DWORD fg = dc_colormap.tlate(*source, dc_translation);
 		DWORD bg = *dest;
 
 		*dest = alphablend2a(bg, bga, fg, fga);
@@ -1290,7 +1270,6 @@ void rt_tlatelucent1colD_c (int hx, int sx, int yl, int yh)
 
 void rt_tlatelucent2colsD_c (int hx, int sx, int yl, int yh)
 {
-	byte  *translation;
 	byte  *source;
 	DWORD *dest;
 	int count;
@@ -1313,17 +1292,16 @@ void rt_tlatelucent2colsD_c (int hx, int sx, int yl, int yh)
 		bga = 256 - fga;
 	}
 
-	translation = dc_translation;
 	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4 + hx];
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		DWORD fg = dc_colormap.shade(translation[source[0]]);
+		DWORD fg = dc_colormap.tlate(source[0], dc_translation);
 		DWORD bg = dest[0];
 		dest[0] = alphablend2a(bg, bga, fg, fga);
 
-		fg = dc_colormap.shade(translation[source[1]]);
+		fg = dc_colormap.tlate(source[1], dc_translation);
 		bg = dest[1];
 		dest[1] = alphablend2a(bg, bga, fg, fga);
 
@@ -1334,7 +1312,6 @@ void rt_tlatelucent2colsD_c (int hx, int sx, int yl, int yh)
 
 void rt_tlatelucent4colsD_c (int sx, int yl, int yh)
 {
-	byte  *translation;
 	byte  *source;
 	DWORD *dest;
 	int count;
@@ -1356,25 +1333,24 @@ void rt_tlatelucent4colsD_c (int sx, int yl, int yh)
 		bga = 256 - fga;
 	}
 
-	translation = dc_translation;
 	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4];
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		DWORD fg = dc_colormap.shade(translation[source[0]]);
+		DWORD fg = dc_colormap.tlate(source[0], dc_translation);
 		DWORD bg = dest[0];
 		dest[0] = alphablend2a(bg, bga, fg, fga);
 
-		fg = dc_colormap.shade(translation[source[1]]);
+		fg = dc_colormap.tlate(source[1], dc_translation);
 		bg = dest[1];
 		dest[1] = alphablend2a(bg, bga, fg, fga);
 
-		fg = dc_colormap.shade(translation[source[2]]);
+		fg = dc_colormap.tlate(source[2], dc_translation);
 		bg = dest[2];
 		dest[2] = alphablend2a(bg, bga, fg, fga);
 
-		fg = dc_colormap.shade(translation[source[3]]);
+		fg = dc_colormap.tlate(source[3], dc_translation);
 		bg = dest[3];
 		dest[3] = alphablend2a(bg, bga, fg, fga);
 

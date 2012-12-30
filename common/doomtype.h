@@ -238,4 +238,203 @@ T clamp (const T in, const T min, const T max)
 }
 
 
+#define MAKERGB(r,g,b)		(((r)<<16)|((g)<<8)|(b))
+#define MAKEARGB(a,r,g,b)	(((a)<<24)|((r)<<16)|((g)<<8)|(b))
+
+#define APART(c)			(((c)>>24)&0xff)
+#define RPART(c)			(((c)>>16)&0xff)
+#define GPART(c)			(((c)>>8)&0xff)
+#define BPART(c)			((c)&0xff)
+
+
+// Alpha blend between two RGB colors with only dest alpha value
+// 0 <=   toa <= 256
+inline DWORD alphablend1a(const DWORD from, const DWORD to, const int toa)
+{
+	const byte fr = RPART(from);
+	const byte fg = GPART(from);
+	const byte fb = BPART(from);
+
+	const int dr = RPART(to) - fr;
+	const int dg = GPART(to) - fg;
+	const int db = BPART(to) - fb;
+
+	return MAKERGB(
+		fr + ((dr * toa) / 256),
+		fg + ((dg * toa) / 256),
+		fb + ((db * toa) / 256)
+	);
+}
+
+// Alpha blend between two RGB colors with two alpha values
+// 0 <= froma <= 256
+// 0 <=   toa <= 256
+inline DWORD alphablend2a(const DWORD from, const int froma, const DWORD to, const int toa)
+{
+	const byte fr = (byte)((RPART(from) * froma) / 256);
+	const byte fg = (byte)((GPART(from) * froma) / 256);
+	const byte fb = (byte)((BPART(from) * froma) / 256);
+
+	const int dr = RPART(to) - fr;
+	const int dg = GPART(to) - fg;
+	const int db = BPART(to) - fb;
+
+	return MAKERGB(
+		fr + ((dr * toa) / 256),
+		fg + ((dg * toa) / 256),
+		fb + ((db * toa) / 256)
+	);
+}
+
+
+
+class translationref_t
+{
+	const byte *m_table;
+	int         m_player_id;
+
+public:
+	translationref_t();
+	translationref_t(const translationref_t &other);
+	translationref_t(const byte *table);
+	translationref_t(const byte *table, const int player_id);
+
+	const byte tlate(const byte c) const;
+	const int getPlayerID() const;
+	const byte *getTable() const;
+
+	operator bool() const;
+};
+
+inline const byte translationref_t::tlate(const byte c) const
+{
+#if DEBUG
+	if (m_table == NULL) throw CFatalError("translationref_t::tlate() called with NULL m_table");
+#endif
+	return m_table[c];
+}
+
+inline const int translationref_t::getPlayerID() const
+{
+	return m_player_id;
+}
+
+inline const byte *translationref_t::getTable() const
+{
+	return m_table;
+}
+
+inline translationref_t::operator bool() const
+{
+	return m_table != NULL;
+}
+
+
+typedef struct {
+	byte    *colormap;          // Colormap for 8-bit
+	DWORD   *shademap;          // ARGB8888 values for 32-bit
+	byte     ramp[256];         // Light fall-off as a function of distance
+	                            // Light levels: 0 = black, 255 = full bright.
+	                            // Distance:     0 = near,  255 = far.
+} shademap_t;
+
+
+// This represents a clean reference to a map of both 8-bit colors and 32-bit shades.
+struct shaderef_t {
+private:
+	const shademap_t *m_colors;     // The color/shade map to use
+	int               m_mapnum;     // Which index into the color/shade map to use
+
+public:
+	mutable const byte		 *m_colormap;   // Computed colormap pointer
+	mutable const DWORD		 *m_shademap;   // Computed shademap pointer
+
+public:
+	shaderef_t();
+	shaderef_t(const shaderef_t &other);
+	shaderef_t(const shademap_t * const colors, const int mapnum);
+
+	// Determines if m_colors is NULL
+	bool isValid() const;
+
+	shaderef_t with(const int mapnum) const;
+
+	byte  index(const byte c) const;
+	DWORD shade(const byte c) const;
+	DWORD shadenoblend(const byte c) const;
+	const shademap_t *map() const;
+	const int mapnum() const;
+	const byte ramp() const;
+
+	DWORD tlate(const byte c, const translationref_t &translation) const;
+	DWORD tlatenoblend(const byte c, const translationref_t &translation) const;
+
+	bool operator==(const shaderef_t &other) const;
+};
+
+inline bool shaderef_t::isValid() const
+{
+	return m_colors != NULL;
+}
+
+inline shaderef_t shaderef_t::with(const int mapnum) const
+{
+	return shaderef_t(m_colors, m_mapnum + mapnum);
+}
+
+
+inline byte shaderef_t::index(const byte c) const
+{
+#if DEBUG
+	if (m_colors == NULL) throw CFatalError("Bad shaderef_t");
+	if (m_colors->colormap == NULL) throw CFatalError("Must call setupIndex first!");
+#endif
+	return m_colormap[c];
+}
+
+extern int		BlendR, BlendG, BlendB, BlendA;
+
+inline DWORD shaderef_t::shade(const byte c) const
+{
+#if DEBUG
+	if (m_colors == NULL) throw CFatalError("Bad shaderef_t");
+	if (m_colors->colormap == NULL) throw CFatalError("Must call setupShade first!");
+#endif
+
+	DWORD s = m_shademap[c];
+	if (BlendA == 0)
+		return s;
+
+	// Do some on-the-fly color blending for 32-bit modes:
+	// NOTE(jsd): This may need some performance attention!
+	DWORD f = alphablend1a(s, MAKERGB(BlendR, BlendG, BlendB), BlendA);
+	return f;
+}
+
+inline DWORD shaderef_t::shadenoblend(const byte c) const
+{
+#if DEBUG
+	if (m_colors == NULL) throw CFatalError("Bad shaderef_t");
+	if (m_colors->colormap == NULL) throw CFatalError("Must call setupShade first!");
+#endif
+
+	return m_shademap[c];
+}
+
+inline const shademap_t *shaderef_t::map() const
+{
+	return m_colors;
+}
+
+inline const int shaderef_t::mapnum() const
+{
+	return m_mapnum;
+}
+
+inline bool shaderef_t::operator==(const shaderef_t &other) const
+{
+	return m_colors == other.m_colors && m_mapnum == other.m_mapnum;
+}
+
+
 #endif

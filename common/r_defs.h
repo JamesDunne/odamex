@@ -240,40 +240,6 @@ typedef struct sector_s sector_t;
 
 
 
-typedef struct {
-	byte	*colormap;          // Colormap for 8-bit
-	DWORD	*shademap;          // ARGB8888 values for 32-bit
-} shademap_t;
-
-// This represents a clean reference to a map of both 8-bit colors and 32-bit shades.
-struct shaderef_t {
-private:
-	const shademap_t *m_colors;     // The color/shade map to use
-	int               m_mapnum;     // Which index into the color/shade map to use
-
-public:
-	mutable const byte		 *m_colormap;   // Computed colormap pointer
-	mutable const DWORD		 *m_shademap;   // Computed shademap pointer
-
-public:
-	shaderef_t();
-	shaderef_t(const shaderef_t &other);
-	shaderef_t(const shademap_t * const colors, const int mapnum);
-
-	// Determines if m_colors is NULL
-	bool isValid() const;
-
-	shaderef_t with(const int mapnum) const;
-
-	byte  index(const byte c) const;
-	DWORD shade(const byte c) const;
-	DWORD shadenoblend(const byte c) const;
-	const shademap_t *map() const;
-	const int mapnum() const;
-
-	bool operator==(const shaderef_t &other) const;
-};
-
 
 //
 // The SideDef.
@@ -583,7 +549,7 @@ struct vissprite_s
 
 	int 			mobjflags;
 
-	byte			*translation;	// [RH] for translation;
+	translationref_t translation;	// [RH] for translation;
 	sector_t		*heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
 	fixed_t			translucency;
 	BYTE			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on

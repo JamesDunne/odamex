@@ -136,6 +136,22 @@ DWORD IndexedPalette[256];
 /* Current color blending values */
 int		BlendR, BlendG, BlendB, BlendA;
 
+translationref_t::translationref_t() : m_table(NULL), m_player_id(-1)
+{
+}
+
+translationref_t::translationref_t(const translationref_t &other) : m_table(other.m_table), m_player_id(other.m_player_id)
+{
+}
+
+translationref_t::translationref_t(const byte *table) : m_table(table), m_player_id(-1)
+{
+}
+
+translationref_t::translationref_t(const byte *table, const int player_id) : m_table(table), m_player_id(player_id)
+{
+}
+
 shaderef_t::shaderef_t() : m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL)
 {
 }
@@ -492,21 +508,24 @@ static void DoBlendingWithGamma (DWORD *from, DWORD *to, unsigned count, int tor
 
 static const float lightScale(float a)
 {
-#if 0
-	// NOTE(jsd): Original linear scale; quite dark.
-	return a;
-#else
-	// NOTE(jsd): Revised inverse logarithmic scale; near-perfect match to COLORMAP lump's scale.
-	// 1 - ((Exp[1] - Exp[a*2-1]) / (Exp[1] - Exp[-1]))
+	// NOTE(jsd): Revised inverse logarithmic scale; near-perfect match to COLORMAP lump's scale
+	// 1 - ((Exp[1] - Exp[a*2 - 1]) / (Exp[1] - Exp[-1]))
 	static float e1 = exp(1.0f);
 	static float e1sube0 = e1 - exp(-1.0f);
 
-	float newa = (e1 - exp(a * 2 - 1)) / e1sube0;
-	// Clamp:
-	if (newa < 0.0f) newa = 0.0f;
-	if (newa > 1.0f) newa = 1.0f;
-	return 1.0f - newa;
-#endif
+	float newa = clamp(1.0f - (e1 - exp(a * 2.0f - 1.0f)) / e1sube0, 0.0f, 1.0f);
+	return newa;
+}
+
+void BuildLightRamp (shademap_t &maps)
+{
+	int l;
+	// Build light ramp:
+	for (l = 0; l < 256; ++l)
+	{
+		int a = (int)(255 * lightScale(l / 255.0f));
+		maps.ramp[l] = a;
+	}
 }
 
 void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps)
@@ -520,10 +539,13 @@ void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps)
 	g = newgamma[ GPART(level.fadeto) ];
 	b = newgamma[ BPART(level.fadeto) ];
 
+	BuildLightRamp(maps);
+
 	// build normal light mappings
 	for (l = 0; l < NUMCOLORMAPS; l++)
 	{
-		int a = (int)(255 * lightScale(l * (1.0f / NUMCOLORMAPS)));
+		byte a = maps.ramp[l * 255 / NUMCOLORMAPS];
+
 		DoBlending (pal->basecolors, colors, pal->numcolors, r, g, b, a);
 		DoBlendingWithGamma (colors, maps.shademap + (l << pal->shadeshift), pal->numcolors, r, g, b, a);
 
@@ -566,9 +588,13 @@ void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
 	g = newgamma[ GPART(level.fadeto) ];
 	b = newgamma[ BPART(level.fadeto) ];
 
+	BuildLightRamp(maps);
+
 	// build normal light mappings
-	for (l = 0; l < NUMCOLORMAPS; l++) {
-		int a = (int)(255 * lightScale(l * (1.0f / NUMCOLORMAPS)));
+	for (l = 0; l < NUMCOLORMAPS; l++)
+	{
+		byte a = maps.ramp[l * 255 / NUMCOLORMAPS];
+
 		DoBlending (pal->basecolors, colors, pal->numcolors, r, g, b, a);
 		DoBlendingWithGamma (colors, maps.shademap + (l << pal->shadeshift), pal->numcolors, r, g, b, a);
 	}

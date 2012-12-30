@@ -240,8 +240,9 @@ extern "C" double			ds_id;
 extern "C" double			ds_idstep;
 extern "C" shaderef_t		slopelighting[MAXWIDTH];
 
-extern byte*			translationtables;
-extern byte*			dc_translation;
+extern byte*            translationtables;
+extern translationref_t dc_translation;
+extern DWORD            translationRGB[MAXPLAYERS][16];
 
 extern fixed_t dc_translevel;
 
@@ -256,8 +257,6 @@ enum
 
 	NUM_TRANSLATION_TABLES
 };
-
-extern byte*			dc_translation;
 
 #define TRANSLATION(a,b)	(((a)<<8)|(b))
 

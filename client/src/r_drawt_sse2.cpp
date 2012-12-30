@@ -234,13 +234,11 @@ void rt_map4colsD_SSE2 (int sx, int yl, int yh)
 
 void rt_tlate4colsD_SSE2 (int sx, int yl, int yh)
 {
-	byte *translation;
 	byte *source;
 	DWORD *dest;
 	int count;
 	int pitch;
 
-	translation = dc_translation;
 	count = yh-yl;
 	if (count < 0)
 		return;
@@ -265,10 +263,10 @@ void rt_tlate4colsD_SSE2 (int sx, int yl, int yh)
 
 	do {
 		const __m128i shaded = _mm_setr_epi32(
-			dc_colormap.shadenoblend(translation[source[0]]),
-			dc_colormap.shadenoblend(translation[source[1]]),
-			dc_colormap.shadenoblend(translation[source[2]]),
-			dc_colormap.shadenoblend(translation[source[3]])
+			dc_colormap.tlatenoblend(source[0], dc_translation),
+			dc_colormap.tlatenoblend(source[1], dc_translation),
+			dc_colormap.tlatenoblend(source[2], dc_translation),
+			dc_colormap.tlatenoblend(source[3], dc_translation)
 		);
 		const __m128i finalColors = blend4vs1_sse2(shaded, blendMult, blendInvAlpha, upper8mask);
 		_mm_storeu_si128((__m128i *)dest, finalColors);
@@ -362,7 +360,6 @@ void rt_lucent4colsD_SSE2 (int sx, int yl, int yh)
 
 void rt_tlatelucent4colsD_SSE2 (int sx, int yl, int yh)
 {
-	byte  *translation;
 	byte  *source;
 	DWORD *dest;
 	int count;
@@ -384,7 +381,6 @@ void rt_tlatelucent4colsD_SSE2 (int sx, int yl, int yh)
 		bga = 256 - fga;
 	}
 
-	translation = dc_translation;
 	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
 	source = &dc_temp[yl*4];
 	pitch = dc_pitch / sizeof(DWORD);
@@ -407,10 +403,10 @@ void rt_tlatelucent4colsD_SSE2 (int sx, int yl, int yh)
 
 	do {
 		const __m128i shaded = _mm_setr_epi32(
-			dc_colormap.shadenoblend(translation[source[0]]),
-			dc_colormap.shadenoblend(translation[source[1]]),
-			dc_colormap.shadenoblend(translation[source[2]]),
-			dc_colormap.shadenoblend(translation[source[3]])
+			dc_colormap.tlatenoblend(source[0], dc_translation),
+			dc_colormap.tlatenoblend(source[1], dc_translation),
+			dc_colormap.tlatenoblend(source[2], dc_translation),
+			dc_colormap.tlatenoblend(source[3], dc_translation)
 		);
 		const __m128i blendedColors = blend4vs1_sse2(shaded, blendMult, blendInvAlpha, upper8mask);
 
