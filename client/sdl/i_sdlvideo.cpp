@@ -288,18 +288,26 @@ void SDLVideo::SetOldPalette (byte *doompalette)
 
 void SDLVideo::UpdateScreen (DCanvas *canvas)
 {
-   if(palettechanged)
-   {
-      // m_Private may or may not be the primary surface (sdlScreen)
-      SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
-      palettechanged = false;
-   }
+	if(palettechanged)
+	{
+		// m_Private may or may not be the primary surface (sdlScreen)
+		SDL_SetPalette((SDL_Surface*)canvas->m_Private, SDL_LOGPAL|SDL_PHYSPAL, newPalette, 0, 256);
+		palettechanged = false;
+	}
 
-   // If not writing directly to the screen blit to the primary surface
-   if(canvas->m_Private != sdlScreen)
-      SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, NULL);
+	// If not writing directly to the screen blit to the primary surface
+	if(canvas->m_Private != sdlScreen)
+		SDL_BlitSurface((SDL_Surface*)canvas->m_Private, NULL, sdlScreen, NULL);
 
-   SDL_Flip(sdlScreen);
+	EXTERN_CVAR(vid_vsync);
+	if (vid_vsync)
+	{
+		SDL_Flip(sdlScreen);
+	}
+	else
+	{
+		SDL_UpdateRect(sdlScreen, 0, 0, 0, 0);
+	}
 }
 
 

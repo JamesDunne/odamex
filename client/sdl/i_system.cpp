@@ -264,10 +264,14 @@ QWORD I_WaitForTicPolled (QWORD prevtic)
 {
 	QWORD time;
 
+	EXTERN_CVAR(i_wait);
+	if (!i_wait)
+		return I_GetTimePolled();
+
 	do
 	{
 		I_Yield();
-	}while ((time = I_GetTimePolled()) <= prevtic);
+	} while ((time = I_GetTimePolled()) <= prevtic);
 
 	return time;
 }
