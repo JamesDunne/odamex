@@ -1102,7 +1102,7 @@ void R_DrawColumnD (void)
 
 			do
 			{
-				*dest = dc_colormap.shadenoblend(source[(frac>>FRACBITS)]);
+				*dest = dc_colormap.shade(source[(frac>>FRACBITS)]);
 
 				dest += pitch;
 				if ((frac += fracstep) >= texheight)
@@ -1114,7 +1114,7 @@ void R_DrawColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = dc_colormap.shadenoblend(source[(frac>>FRACBITS)&mask]);
+				*dest = dc_colormap.shade(source[(frac>>FRACBITS)&mask]);
 
 				dest += pitch;
 				frac += fracstep;
@@ -1233,7 +1233,7 @@ void R_DrawTranslucentColumnD (void)
 
 			do
 			{
-				DWORD fg = dc_colormap.shadenoblend(source[(frac>>FRACBITS)]);
+				DWORD fg = dc_colormap.shade(source[(frac>>FRACBITS)]);
 				DWORD bg = *dest;
 				*dest = alphablend2a(bg, bga, fg, fga);
 				dest += pitch;
@@ -1247,7 +1247,7 @@ void R_DrawTranslucentColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				DWORD fg = dc_colormap.shadenoblend(source[(frac>>FRACBITS)&mask]);
+				DWORD fg = dc_colormap.shade(source[(frac>>FRACBITS)&mask]);
 				DWORD bg = *dest;
 				*dest = alphablend2a(bg, bga, fg, fga);
 				dest += pitch;
@@ -1307,7 +1307,7 @@ void R_DrawTranslatedColumnD (void)
 
 			do
 			{
-				*dest = dc_colormap.shadenoblend(dc_translation.tlate(source[(frac>>FRACBITS)]));
+				*dest = dc_colormap.tlate(source[(frac>>FRACBITS)], dc_translation);
 				dest += pitch;
 
 				if ((frac += fracstep) >= texheight)
@@ -1319,7 +1319,7 @@ void R_DrawTranslatedColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = dc_colormap.shadenoblend(dc_translation.tlate(source[(frac>>FRACBITS) & mask]));
+				*dest = dc_colormap.tlate(source[(frac>>FRACBITS) & mask], dc_translation);
 				dest += pitch;
 			
 				frac += fracstep;
@@ -1369,7 +1369,7 @@ void R_DrawSpanD_c (void)
 
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
-		*dest = ds_colormap.shadenoblend(ds_source[spot]);
+		*dest = ds_colormap.shade(ds_source[spot]);
 		dest += ds_colsize;
 
 		// Next step in u,v.
@@ -1435,7 +1435,7 @@ void R_DrawSlopeSpanD(void)
       while(incount--)
       {
          colormap = slopelighting[ltindex++];
-         *dest = colormap.shadenoblend(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+         *dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
          dest += colsize;
          ufrac += ustep;
          vfrac += vstep;
@@ -1469,7 +1469,7 @@ void R_DrawSlopeSpanD(void)
       while(incount--)
       {
          colormap = slopelighting[ltindex++];
-         *dest = colormap.shadenoblend(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+         *dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
          dest += colsize;
          ufrac += ustep;
          vfrac += vstep;
@@ -1991,13 +1991,6 @@ void R_InitDrawers ()
 	if (optimize_kind == OPTIMIZE_SSE2)
 	{
 #ifdef __SSE2__
-		rt_copy4colsD           = rt_copy4colsD_SSE2;
-		rt_map4colsD            = rt_map4colsD_SSE2;
-		rt_lucent4colsD         = rt_lucent4colsD_SSE2;
-		rt_tlate4colsD          = rt_tlate4colsD_SSE2;
-		rt_tlatelucent4colsD    = rt_tlatelucent4colsD_SSE2;
-
-		R_DrawSpanD             = R_DrawSpanD_SSE2;
 		r_dimpatchD             = r_dimpatchD_SSE2;
 #else
 		// No SSE2 support compiled in.
@@ -2008,13 +2001,6 @@ void R_InitDrawers ()
 	else if (optimize_kind == OPTIMIZE_MMX)
 	{
 #ifdef __MMX__
-		rt_copy4colsD           = rt_copy4colsD_MMX;
-		rt_map4colsD            = rt_map4colsD_MMX;
-		rt_lucent4colsD         = rt_lucent4colsD_MMX;
-		rt_tlate4colsD          = rt_tlate4colsD_MMX;
-		rt_tlatelucent4colsD    = rt_tlatelucent4colsD_MMX;
-
-		R_DrawSpanD             = R_DrawSpanD_MMX;
 		r_dimpatchD             = r_dimpatchD_MMX;
 #else
 		// No MMX support compiled in.
@@ -2025,13 +2011,6 @@ void R_InitDrawers ()
 	else if (optimize_kind == OPTIMIZE_ALTIVEC)
 	{
 #ifdef __ALTIVEC__
-		rt_copy4colsD           = rt_copy4colsD_ALTIVEC;
-		rt_map4colsD            = rt_map4colsD_ALTIVEC;
-		rt_lucent4colsD         = rt_lucent4colsD_ALTIVEC;
-		rt_tlate4colsD          = rt_tlate4colsD_ALTIVEC;
-		rt_tlatelucent4colsD    = rt_tlatelucent4colsD_ALTIVEC;
-
-		R_DrawSpanD             = R_DrawSpanD_ALTIVEC;
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 #else
 		// No ALTIVEC support compiled in.
@@ -2043,13 +2022,6 @@ void R_InitDrawers ()
 	{
 		// No CPU vectorization available.
 setNone:
-		rt_copy4colsD           = rt_copy4colsD_c;
-		rt_map4colsD            = rt_map4colsD_c;
-		rt_lucent4colsD         = rt_lucent4colsD_c;
-		rt_tlate4colsD          = rt_tlate4colsD_c;
-		rt_tlatelucent4colsD    = rt_tlatelucent4colsD_c;
-
-		R_DrawSpanD             = R_DrawSpanD_c;
 		r_dimpatchD             = r_dimpatchD_c;
 	}
 
@@ -2118,41 +2090,12 @@ void R_InitColumnDrawers ()
 		rt_tlatelucent1col      = rt_tlatelucent1colD_c;
 		rt_tlatelucent2cols     = rt_tlatelucent2colsD_c;
 
-		// Possibly vectorized functions:
-		if (BlendA == 0)
-		{
-			// Don't use vectorization if there's nothing to blend:
-			rt_copy4cols            = rt_copy4colsD_c;
-			rt_map4cols             = rt_map4colsD_c;
-			rt_lucent4cols          = rt_lucent4colsD_c;
-			rt_tlate4cols           = rt_tlate4colsD_c;
-			rt_tlatelucent4cols     = rt_tlatelucent4colsD_c;
-			R_DrawSpan				= R_DrawSpanD_c;
-		}
-		else
-		{
-			EXTERN_CVAR(r_blendpost);
-			if (r_blendpost)
-			{
-				rt_copy4colsD           = rt_copy4colsD_c;
-				rt_map4colsD            = rt_map4colsD_c;
-				rt_lucent4colsD         = rt_lucent4colsD_c;
-				rt_tlate4colsD          = rt_tlate4colsD_c;
-				rt_tlatelucent4colsD    = rt_tlatelucent4colsD_c;
-				R_DrawSpan				= R_DrawSpanD_c;
-				// Leave r_dimpatchD set to an optimized version.
-			}
-			else
-			{
-				// Copy function pointers set in R_InitDrawers():
-				rt_copy4cols            = rt_copy4colsD;
-				rt_map4cols             = rt_map4colsD;
-				rt_lucent4cols          = rt_lucent4colsD;
-				rt_tlate4cols           = rt_tlate4colsD;
-				rt_tlatelucent4cols     = rt_tlatelucent4colsD;
-				R_DrawSpan				= R_DrawSpanD;
-			}
-		}
+		rt_copy4cols            = rt_copy4colsD_c;
+		rt_map4cols             = rt_map4colsD_c;
+		rt_lucent4cols          = rt_lucent4colsD_c;
+		rt_tlate4cols           = rt_tlate4colsD_c;
+		rt_tlatelucent4cols     = rt_tlatelucent4colsD_c;
+		R_DrawSpan				= R_DrawSpanD_c;
 	}
 }
 

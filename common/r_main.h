@@ -211,29 +211,19 @@ inline const byte shaderef_t::ramp() const
 	return m_colors->ramp[index];
 }
 
-inline DWORD shaderef_t::tlate(const byte c, const translationref_t &translation) const
-{
-	DWORD s = tlatenoblend(c, translation);
-
-	// Do some on-the-fly color blending for 32-bit modes:
-	// NOTE(jsd): This may need some performance attention!
-	DWORD f = alphablend1a(s, MAKERGB(BlendR, BlendG, BlendB), BlendA);
-	return f;
-}
-
 extern DWORD translationRGB[MAXPLAYERS+1][16];
 
-inline DWORD shaderef_t::tlatenoblend(const byte c, const translationref_t &translation) const
+inline DWORD shaderef_t::tlate(const byte c, const translationref_t &translation) const
 {
 	int pid = translation.getPlayerID();
 
 	// Not a player color translation:
 	if (pid == -1)
-		return shadenoblend(translation.tlate(c));
+		return shade(translation.tlate(c));
 
 	// Is a player color translation, but not a player color index:
 	if (!(c >= 0x70 && c < 0x80))
-		return shadenoblend(c);
+		return shade(c);
 
 	// Find the shading for the custom player colors:
 	byte a = 255 - ramp();

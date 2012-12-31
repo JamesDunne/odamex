@@ -361,13 +361,11 @@ public:
 
 	byte  index(const byte c) const;
 	DWORD shade(const byte c) const;
-	DWORD shadenoblend(const byte c) const;
 	const shademap_t *map() const;
 	const int mapnum() const;
 	const byte ramp() const;
 
 	DWORD tlate(const byte c, const translationref_t &translation) const;
-	DWORD tlatenoblend(const byte c, const translationref_t &translation) const;
 
 	bool operator==(const shaderef_t &other) const;
 };
@@ -386,36 +384,18 @@ inline shaderef_t shaderef_t::with(const int mapnum) const
 inline byte shaderef_t::index(const byte c) const
 {
 #if DEBUG
-	if (m_colors == NULL) throw CFatalError("Bad shaderef_t");
-	if (m_colors->colormap == NULL) throw CFatalError("Must call setupIndex first!");
+	if (m_colors == NULL) throw CFatalError("shaderef_t::index(): Bad shaderef_t");
+	if (m_colors->colormap == NULL) throw CFatalError("shaderef_t::index(): colormap == NULL!");
 #endif
+
 	return m_colormap[c];
 }
-
-extern int		BlendR, BlendG, BlendB, BlendA;
 
 inline DWORD shaderef_t::shade(const byte c) const
 {
 #if DEBUG
-	if (m_colors == NULL) throw CFatalError("Bad shaderef_t");
-	if (m_colors->colormap == NULL) throw CFatalError("Must call setupShade first!");
-#endif
-
-	DWORD s = m_shademap[c];
-	if (BlendA == 0)
-		return s;
-
-	// Do some on-the-fly color blending for 32-bit modes:
-	// NOTE(jsd): This may need some performance attention!
-	DWORD f = alphablend1a(s, MAKERGB(BlendR, BlendG, BlendB), BlendA);
-	return f;
-}
-
-inline DWORD shaderef_t::shadenoblend(const byte c) const
-{
-#if DEBUG
-	if (m_colors == NULL) throw CFatalError("Bad shaderef_t");
-	if (m_colors->colormap == NULL) throw CFatalError("Must call setupShade first!");
+	if (m_colors == NULL) throw CFatalError("shaderef_t::shade(): Bad shaderef_t");
+	if (m_colors->shademap == NULL) throw CFatalError("shaderef_t::shade(): shademap == NULL!");
 #endif
 
 	return m_shademap[c];
@@ -436,5 +416,7 @@ inline bool shaderef_t::operator==(const shaderef_t &other) const
 	return m_colors == other.m_colors && m_mapnum == other.m_mapnum;
 }
 
+// NOTE(jsd): Rest of shaderef_t and translationref_t functions implemented in "r_main.h"
+// NOTE(jsd): Constructors are implemented in "v_palette.cpp"
 
 #endif
