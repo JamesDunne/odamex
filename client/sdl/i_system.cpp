@@ -687,6 +687,18 @@ void STACK_ARGS I_Error (const char *error, ...)
 	throw CRecoverableError (errortext);
 }
 
+void STACK_ARGS I_Warning(const char *warning, ...)
+{
+	va_list argptr;
+	char warningtext[MAX_ERRORTEXT];
+
+	va_start (argptr, warning);
+	vsprintf (warningtext, warning, argptr);
+	va_end (argptr);
+
+	Printf_Bold ("\n%s\n", warningtext);
+}
+
 char DoomStartupTitle[256] = { 0 };
 
 void I_SetTitleString (const char *title)
