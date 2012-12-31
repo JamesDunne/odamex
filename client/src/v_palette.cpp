@@ -569,10 +569,10 @@ void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps)
 
 	for (c = 0; c < pal->numcolors; c++)
 	{
-		grayint = (int)(255.0f * (1.0f -
+		grayint = (int)(255.0f * clamp(1.0f -
 			(RPART(pal->basecolors[c]) * 0.00116796875f +
 			 GPART(pal->basecolors[c]) * 0.00229296875f +
-			 BPART(pal->basecolors[c]) * 0.0005625)));
+			 BPART(pal->basecolors[c]) * 0.0005625f), 0.0f, 1.0f));
 		color[c] = BestColor (pal->basecolors, grayint, grayint, grayint, pal->numcolors);
 		shade[c] = MAKERGB(grayint, grayint, grayint);
 	}
@@ -605,10 +605,10 @@ void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
 
 	for (c = 0; c < pal->numcolors; c++)
 	{
-		grayint = (int)(255.0f * (1.0f -
+		grayint = (int)(255.0f * clamp(1.0f -
 			(RPART(pal->basecolors[c]) * 0.00116796875f +
 			 GPART(pal->basecolors[c]) * 0.00229296875f +
-			 BPART(pal->basecolors[c]) * 0.0005625)));
+			 BPART(pal->basecolors[c]) * 0.0005625f), 0.0f, 1.0f));
 		shade[c] = MAKERGB(grayint, grayint, grayint);
 	}
 }
