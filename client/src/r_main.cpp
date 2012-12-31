@@ -1354,6 +1354,11 @@ void R_RenderPlayerView (player_t *player)
 
 	// [RH] Apply detail mode doubling
 	R_DetailDouble ();
+
+	// NOTE(jsd): Full-screen status color blending:
+	EXTERN_CVAR(r_blendpost);
+	if (BlendA != 0 && r_blendpost)
+		r_dimpatchD(screen, MAKERGB(BlendR, BlendG, BlendB), BlendA, 0, 0, screen->width, screen->height);
 }
 
 //

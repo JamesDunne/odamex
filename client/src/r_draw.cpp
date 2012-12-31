@@ -1102,7 +1102,7 @@ void R_DrawColumnD (void)
 
 			do
 			{
-				*dest = dc_colormap.shade(source[(frac>>FRACBITS)]);
+				*dest = dc_colormap.shadenoblend(source[(frac>>FRACBITS)]);
 
 				dest += pitch;
 				if ((frac += fracstep) >= texheight)
@@ -1114,7 +1114,7 @@ void R_DrawColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = dc_colormap.shade(source[(frac>>FRACBITS)&mask]);
+				*dest = dc_colormap.shadenoblend(source[(frac>>FRACBITS)&mask]);
 
 				dest += pitch;
 				frac += fracstep;
@@ -1233,7 +1233,7 @@ void R_DrawTranslucentColumnD (void)
 
 			do
 			{
-				DWORD fg = dc_colormap.shade(source[(frac>>FRACBITS)]);
+				DWORD fg = dc_colormap.shadenoblend(source[(frac>>FRACBITS)]);
 				DWORD bg = *dest;
 				*dest = alphablend2a(bg, bga, fg, fga);
 				dest += pitch;
@@ -1247,7 +1247,7 @@ void R_DrawTranslucentColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				DWORD fg = dc_colormap.shade(source[(frac>>FRACBITS)&mask]);
+				DWORD fg = dc_colormap.shadenoblend(source[(frac>>FRACBITS)&mask]);
 				DWORD bg = *dest;
 				*dest = alphablend2a(bg, bga, fg, fga);
 				dest += pitch;
@@ -1307,7 +1307,7 @@ void R_DrawTranslatedColumnD (void)
 
 			do
 			{
-				*dest = dc_colormap.shade(dc_translation.tlate(source[(frac>>FRACBITS)]));
+				*dest = dc_colormap.shadenoblend(dc_translation.tlate(source[(frac>>FRACBITS)]));
 				dest += pitch;
 
 				if ((frac += fracstep) >= texheight)
@@ -1319,7 +1319,7 @@ void R_DrawTranslatedColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = dc_colormap.shade(dc_translation.tlate(source[(frac>>FRACBITS) & mask]));
+				*dest = dc_colormap.shadenoblend(dc_translation.tlate(source[(frac>>FRACBITS) & mask]));
 				dest += pitch;
 			
 				frac += fracstep;
@@ -1369,7 +1369,7 @@ void R_DrawSpanD_c (void)
 
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
-		*dest = ds_colormap.shade(ds_source[spot]);
+		*dest = ds_colormap.shadenoblend(ds_source[spot]);
 		dest += ds_colsize;
 
 		// Next step in u,v.
@@ -1435,7 +1435,7 @@ void R_DrawSlopeSpanD(void)
       while(incount--)
       {
          colormap = slopelighting[ltindex++];
-         *dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+         *dest = colormap.shadenoblend(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
          dest += colsize;
          ufrac += ustep;
          vfrac += vstep;
@@ -1469,7 +1469,7 @@ void R_DrawSlopeSpanD(void)
       while(incount--)
       {
          colormap = slopelighting[ltindex++];
-         *dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+         *dest = colormap.shadenoblend(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
          dest += colsize;
          ufrac += ustep;
          vfrac += vstep;
@@ -2131,13 +2131,27 @@ void R_InitColumnDrawers ()
 		}
 		else
 		{
-			// Copy function pointers set in R_InitDrawers():
-			rt_copy4cols            = rt_copy4colsD;
-			rt_map4cols             = rt_map4colsD;
-			rt_lucent4cols          = rt_lucent4colsD;
-			rt_tlate4cols           = rt_tlate4colsD;
-			rt_tlatelucent4cols     = rt_tlatelucent4colsD;
-			R_DrawSpan				= R_DrawSpanD;
+			EXTERN_CVAR(r_blendpost);
+			if (r_blendpost)
+			{
+				rt_copy4colsD           = rt_copy4colsD_c;
+				rt_map4colsD            = rt_map4colsD_c;
+				rt_lucent4colsD         = rt_lucent4colsD_c;
+				rt_tlate4colsD          = rt_tlate4colsD_c;
+				rt_tlatelucent4colsD    = rt_tlatelucent4colsD_c;
+				R_DrawSpan				= R_DrawSpanD_c;
+				// Leave r_dimpatchD set to an optimized version.
+			}
+			else
+			{
+				// Copy function pointers set in R_InitDrawers():
+				rt_copy4cols            = rt_copy4colsD;
+				rt_map4cols             = rt_map4colsD;
+				rt_lucent4cols          = rt_lucent4colsD;
+				rt_tlate4cols           = rt_tlate4colsD;
+				rt_tlatelucent4cols     = rt_tlatelucent4colsD;
+				R_DrawSpan				= R_DrawSpanD;
+			}
 		}
 	}
 }

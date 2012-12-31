@@ -367,6 +367,8 @@ CVAR_FUNC_DECL (vid_32bpp,		"1", "",	CVARTYPE_BOOL, CVAR_CLIENTINFO | CVAR_ARCHI
 // Optimize rendering functions based on CPU vectorization support
 // Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
 CVAR_FUNC_DECL (r_optimize, "detect", "Rendering optimizations", CVARTYPE_STRING, CVAR_USERINFO | CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+// Status color blending mode
+CVAR (r_blendpost, "1", "Do status blending post-rendering (1) or during rendering (0)", CVARTYPE_BOOL, CVAR_ARCHIVE)
 // TODO: document
 CVAR_FUNC_DECL (screenblocks, "10", "",	CVARTYPE_BYTE, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 // How to handle widescreen resolutions

@@ -797,13 +797,13 @@ void rt_copy1colD_c (int hx, int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 
 	if (count & 1) {
-		*dest = pal.shade(*source);
+		*dest = pal.shadenoblend(*source);
 		source += 4;
 		dest += pitch;
 	}
 	if (count & 2) {
-		dest[0] = pal.shade(source[0]);
-		dest[pitch] = pal.shade(source[4]);
+		dest[0] = pal.shadenoblend(source[0]);
+		dest[pitch] = pal.shadenoblend(source[4]);
 		source += 8;
 		dest += pitch*2;
 	}
@@ -811,10 +811,10 @@ void rt_copy1colD_c (int hx, int sx, int yl, int yh)
 		return;
 
 	do {
-		dest[0] = pal.shade(source[0]);
-		dest[pitch] = pal.shade(source[4]);
-		dest[pitch*2] = pal.shade(source[8]);
-		dest[pitch*3] = pal.shade(source[12]);
+		dest[0] = pal.shadenoblend(source[0]);
+		dest[pitch] = pal.shadenoblend(source[4]);
+		dest[pitch*2] = pal.shadenoblend(source[8]);
+		dest[pitch*3] = pal.shadenoblend(source[12]);
 		source += 16;
 		dest += pitch*4;
 	} while (--count);
@@ -838,8 +838,8 @@ void rt_copy2colsD_c (int hx, int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 
 	if (count & 1) {
-		dest[0] = pal.shade(source[0] & 0xff);
-		dest[1] = pal.shade(source[0] >> 8);
+		dest[0] = pal.shadenoblend(source[0] & 0xff);
+		dest[1] = pal.shadenoblend(source[0] >> 8);
 		source += 4/sizeof(WORD);
 		dest += pitch;
 	}
@@ -848,11 +848,11 @@ void rt_copy2colsD_c (int hx, int sx, int yl, int yh)
 
 	do {
 		WORD sc = source[0];
-		dest[0] = pal.shade(sc & 0xff);
-		dest[1] = pal.shade(sc >> 8);
+		dest[0] = pal.shadenoblend(sc & 0xff);
+		dest[1] = pal.shadenoblend(sc >> 8);
 		sc = source[4/sizeof(WORD)];
-		dest[pitch+0] = pal.shade(sc & 0xff);
-		dest[pitch+1] = pal.shade(sc >> 8);
+		dest[pitch+0] = pal.shadenoblend(sc & 0xff);
+		dest[pitch+1] = pal.shadenoblend(sc >> 8);
 		source += 8/sizeof(WORD);
 		dest += pitch*2;
 	} while (--count);
@@ -877,10 +877,10 @@ void rt_copy4colsD_c (int sx, int yl, int yh)
 
 	if (count & 1) {
 		DWORD sc = source[0];
-		dest[0] = pal.shade((sc >> 24) & 0xff);
-		dest[1] = pal.shade((sc >> 16) & 0xff);
-		dest[2] = pal.shade((sc >>  8) & 0xff);
-		dest[3] = pal.shade((sc      ) & 0xff);
+		dest[0] = pal.shadenoblend((sc >> 24) & 0xff);
+		dest[1] = pal.shadenoblend((sc >> 16) & 0xff);
+		dest[2] = pal.shadenoblend((sc >>  8) & 0xff);
+		dest[3] = pal.shadenoblend((sc      ) & 0xff);
 
 		source += 4/sizeof(DWORD);
 		dest += pitch;
@@ -890,16 +890,16 @@ void rt_copy4colsD_c (int sx, int yl, int yh)
 
 	do {
 		DWORD sc = source[0];
-		dest[0] = pal.shade((sc >> 24) & 0xff);
-		dest[1] = pal.shade((sc >> 16) & 0xff);
-		dest[2] = pal.shade((sc >>  8) & 0xff);
-		dest[3] = pal.shade((sc      ) & 0xff);
+		dest[0] = pal.shadenoblend((sc >> 24) & 0xff);
+		dest[1] = pal.shadenoblend((sc >> 16) & 0xff);
+		dest[2] = pal.shadenoblend((sc >>  8) & 0xff);
+		dest[3] = pal.shadenoblend((sc      ) & 0xff);
 
 		sc = source[4/sizeof(DWORD)];
-		dest[pitch+0] = pal.shade((sc >> 24) & 0xff);
-		dest[pitch+1] = pal.shade((sc >> 16) & 0xff);
-		dest[pitch+2] = pal.shade((sc >>  8) & 0xff);
-		dest[pitch+3] = pal.shade((sc      ) & 0xff);
+		dest[pitch+0] = pal.shadenoblend((sc >> 24) & 0xff);
+		dest[pitch+1] = pal.shadenoblend((sc >> 16) & 0xff);
+		dest[pitch+2] = pal.shadenoblend((sc >>  8) & 0xff);
+		dest[pitch+3] = pal.shadenoblend((sc      ) & 0xff);
 
 		source += 8/sizeof(DWORD);
 		dest += pitch*2;
@@ -923,7 +923,7 @@ void rt_map1colD_c (int hx, int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 
 	if (count & 1) {
-		*dest = dc_colormap.shade(*source);
+		*dest = dc_colormap.shadenoblend(*source);
 		dest += pitch;
 
 		source += 4;
@@ -932,10 +932,10 @@ void rt_map1colD_c (int hx, int sx, int yl, int yh)
 		return;
 
 	do {
-		dest[0] = dc_colormap.shade(source[0]);
+		dest[0] = dc_colormap.shadenoblend(source[0]);
 		dest += pitch;
 
-		dest[0] = dc_colormap.shade(source[4]);
+		dest[0] = dc_colormap.shadenoblend(source[4]);
 		dest += pitch;
 
 		source += 8;
@@ -959,8 +959,8 @@ void rt_map2colsD_c (int hx, int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 
 	if (count & 1) {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest[1] = dc_colormap.shade(source[1]);
+		dest[0] = dc_colormap.shadenoblend(source[0]);
+		dest[1] = dc_colormap.shadenoblend(source[1]);
 		dest += pitch;
 
 		source += 4;
@@ -969,12 +969,12 @@ void rt_map2colsD_c (int hx, int sx, int yl, int yh)
 		return;
 
 	do {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest[1] = dc_colormap.shade(source[1]);
+		dest[0] = dc_colormap.shadenoblend(source[0]);
+		dest[1] = dc_colormap.shadenoblend(source[1]);
 		dest += pitch;
 
-		dest[0] = dc_colormap.shade(source[4]);
-		dest[1] = dc_colormap.shade(source[5]);
+		dest[0] = dc_colormap.shadenoblend(source[4]);
+		dest[1] = dc_colormap.shadenoblend(source[5]);
 		dest += pitch;
 
 		source += 8;
@@ -998,10 +998,10 @@ void rt_map4colsD_c (int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 	
 	if (count & 1) {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest[1] = dc_colormap.shade(source[1]);
-		dest[2] = dc_colormap.shade(source[2]);
-		dest[3] = dc_colormap.shade(source[3]);
+		dest[0] = dc_colormap.shadenoblend(source[0]);
+		dest[1] = dc_colormap.shadenoblend(source[1]);
+		dest[2] = dc_colormap.shadenoblend(source[2]);
+		dest[3] = dc_colormap.shadenoblend(source[3]);
 		source += 4;
 		dest += pitch;
 	}
@@ -1009,16 +1009,16 @@ void rt_map4colsD_c (int sx, int yl, int yh)
 		return;
 
 	do {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest[1] = dc_colormap.shade(source[1]);
-		dest[2] = dc_colormap.shade(source[2]);
-		dest[3] = dc_colormap.shade(source[3]);
+		dest[0] = dc_colormap.shadenoblend(source[0]);
+		dest[1] = dc_colormap.shadenoblend(source[1]);
+		dest[2] = dc_colormap.shadenoblend(source[2]);
+		dest[3] = dc_colormap.shadenoblend(source[3]);
 		dest += pitch;
 
-		dest[0] = dc_colormap.shade(source[4]);
-		dest[1] = dc_colormap.shade(source[5]);
-		dest[2] = dc_colormap.shade(source[6]);
-		dest[3] = dc_colormap.shade(source[7]);
+		dest[0] = dc_colormap.shadenoblend(source[4]);
+		dest[1] = dc_colormap.shadenoblend(source[5]);
+		dest[2] = dc_colormap.shadenoblend(source[6]);
+		dest[3] = dc_colormap.shadenoblend(source[7]);
 		dest += pitch;
 
 		source += 8;
@@ -1127,7 +1127,7 @@ void rt_lucent1colD_c (int hx, int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		DWORD fg = dc_colormap.shade(*source);
+		DWORD fg = dc_colormap.shadenoblend(*source);
 		DWORD bg = *dest;
 
 		*dest = alphablend2a(bg, bga, fg, fga);
@@ -1166,11 +1166,11 @@ void rt_lucent2colsD_c (int hx, int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		DWORD fg = dc_colormap.shade(source[0]);
+		DWORD fg = dc_colormap.shadenoblend(source[0]);
 		DWORD bg = dest[0];
 		dest[0] = alphablend2a(bg, bga, fg, fga);
 
-		fg = dc_colormap.shade(source[1]);
+		fg = dc_colormap.shadenoblend(source[1]);
 		bg = dest[1];
 		dest[1] = alphablend2a(bg, bga, fg, fga);
 
@@ -1208,19 +1208,19 @@ void rt_lucent4colsD_c (int sx, int yl, int yh)
 	pitch = dc_pitch / sizeof(DWORD);
 
 	do {
-		DWORD fg = dc_colormap.shade(source[0]);
+		DWORD fg = dc_colormap.shadenoblend(source[0]);
 		DWORD bg = dest[0];
 		dest[0] = alphablend2a(bg, bga, fg, fga);
 
-		fg = dc_colormap.shade(source[1]);
+		fg = dc_colormap.shadenoblend(source[1]);
 		bg = dest[1];
 		dest[1] = alphablend2a(bg, bga, fg, fga);
 
-		fg = dc_colormap.shade(source[2]);
+		fg = dc_colormap.shadenoblend(source[2]);
 		bg = dest[2];
 		dest[2] = alphablend2a(bg, bga, fg, fga);
 
-		fg = dc_colormap.shade(source[3]);
+		fg = dc_colormap.shadenoblend(source[3]);
 		bg = dest[3];
 		dest[3] = alphablend2a(bg, bga, fg, fga);
 
