@@ -242,7 +242,7 @@ extern "C" shaderef_t		slopelighting[MAXWIDTH];
 
 extern byte*            translationtables;
 extern translationref_t dc_translation;
-extern DWORD            translationRGB[MAXPLAYERS][16];
+extern DWORD            translationRGB[MAXPLAYERS+1][16];
 
 extern fixed_t dc_translevel;
 
@@ -277,6 +277,8 @@ R_InitBuffer
 //	for player rendering etc.
 void R_InitTranslationTables (void);
 void R_FreeTranslationTables (void);
+
+void R_CopyTranslationRGB (int fromplayer, int toplayer);
 
 // [RH] Actually create a player's translation table.
 void R_BuildPlayerTranslation (int player, int color);

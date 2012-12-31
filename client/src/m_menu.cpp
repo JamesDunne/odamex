@@ -1295,6 +1295,11 @@ void M_PlayerSetup (int choice)
 
 	// [Nes] Intialize the player preview color.
 	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
+
+	if (consoleplayer().ingame())
+	{
+		R_CopyTranslationRGB (0, consoleplayer_id);
+	}
 }
 
 static void M_PlayerSetupTicker (void)
@@ -1798,6 +1803,11 @@ static void SendNewColor (int red, int green, int blue)
 
 	// [Nes] Change the player preview color.
 	R_BuildPlayerTranslation (0, V_GetColorFromString (NULL, cl_color.cstring()));
+
+	if (consoleplayer().ingame())
+	{
+		R_CopyTranslationRGB (0, consoleplayer_id);
+	}
 }
 
 static void M_SlidePlayerRed (int choice)

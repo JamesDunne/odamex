@@ -1626,6 +1626,8 @@ void NetDemo::readSnapshotData(byte *buf, size_t length)
 		R_BuildPlayerTranslation(players[i].id, color);
 	}
 
+	R_CopyTranslationRGB (0, consoleplayer_id);
+
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;
 	while ( (mo = flagiterator.Next() ) )

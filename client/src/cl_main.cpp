@@ -2968,7 +2968,7 @@ void CL_MobjTranslation()
     if (!mo)
         return;
 
-	if (table < MAXPLAYERS)
+	if (table <= MAXPLAYERS)
 		mo->translation = translationref_t(translationtables + 256 * table, table);
 	else
 		mo->translation = translationref_t(translationtables + 256 * table);

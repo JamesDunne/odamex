@@ -221,7 +221,7 @@ inline DWORD shaderef_t::tlate(const byte c, const translationref_t &translation
 	return f;
 }
 
-extern DWORD translationRGB[MAXPLAYERS][16];
+extern DWORD translationRGB[MAXPLAYERS+1][16];
 
 inline DWORD shaderef_t::tlatenoblend(const byte c, const translationref_t &translation) const
 {

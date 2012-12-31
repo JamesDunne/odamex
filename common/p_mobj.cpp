@@ -831,7 +831,7 @@ void AActor::Serialize (FArchive &arc)
 			translation = translationref_t();
 		else
 		{
-			if ((trans / 256) < MAXPLAYERS)
+			if ((trans / 256) <= MAXPLAYERS)
 				translation = translationref_t(translationtables + trans, trans / 256);
 			else
 				translation = translationref_t(translationtables + trans);

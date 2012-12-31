@@ -69,3 +69,4 @@ Code Changes
  * `DCanvas::Dim()` vectorized.
  * `R_DrawSpanD()` vectorized.
  * Don't use vectorization if `BlendA == 0`; just slows things down.
+ * 32bpp player color translation.

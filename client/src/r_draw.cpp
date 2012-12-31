@@ -605,7 +605,7 @@ void R_DrawTranslucentColumnP (void)
 //
 translationref_t dc_translation;
 byte*	         translationtables;
-DWORD            translationRGB[MAXPLAYERS][16];
+DWORD            translationRGB[MAXPLAYERS+1][16];
 
 void R_DrawTranslatedColumnP (void)
 {
@@ -1536,6 +1536,14 @@ void R_InitTranslationTables (void)
 	for (i = 0; i < 256; i++)
 		translationtables[i] = i;
 
+	// Set up default translationRGB tables:
+	palette_t *pal = GetDefaultPalette();
+	for (i = 0; i < MAXPLAYERS; ++i)
+	{
+		for (int j = 0x70; j < 0x80; ++j)
+			translationRGB[i][j - 0x70] = pal->basecolors[j];
+	}
+
 	for (i = 1; i < MAXPLAYERS+3; i++)
 		memcpy (translationtables + i*256, translationtables, 256);
 
@@ -1583,6 +1591,15 @@ void R_BuildClassicPlayerTranslation (int player, int color)
 			translationtables[i+(player * 256)] = 0x20 + (i&0xf);	
 			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
 		}
+}
+
+void R_CopyTranslationRGB (int fromplayer, int toplayer)
+{
+	for (int i = 0x70; i < 0x80; ++i)
+	{
+		translationRGB[toplayer][i - 0x70] = translationRGB[fromplayer][i - 0x70];
+		translationtables[i+(toplayer * 256)] = translationtables[i+(fromplayer * 256)];
+	}
 }
 
 // [RH] Create a player's translation table based on
