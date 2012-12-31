@@ -264,8 +264,8 @@ QWORD I_WaitForTicPolled (QWORD prevtic)
 {
 	QWORD time;
 
-	EXTERN_CVAR(i_wait);
-	if (!i_wait)
+	EXTERN_CVAR(vid_capfps);
+	if (!vid_capfps)
 		return I_GetTimePolled();
 
 	do
