@@ -1,0 +1,9 @@
+.gitignore
+objs/
+*.layout
+odamex_private.*
+odamex.exe
+odamex.cfg
+odamex.wad
+*.dll
+*.zip
