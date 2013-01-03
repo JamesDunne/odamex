@@ -2026,12 +2026,6 @@ setNone:
 	}
 
 	// Check that all pointers are definitely assigned!
-	assert(rt_copy4colsD != NULL);
-	assert(rt_map4colsD != NULL);
-	assert(rt_lucent4colsD != NULL);
-	assert(rt_tlate4colsD != NULL);
-	assert(rt_tlatelucent4colsD != NULL);
-	assert(R_DrawSpanD != NULL);
 	assert(r_dimpatchD != NULL);
 }
 
