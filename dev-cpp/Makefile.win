@@ -1,0 +1,480 @@
+# Project: odamex
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = objs/odamex_private.res
+OBJ  = objs/c_cvarlist.o objs/c_cvars.o objs/c_dispatch.o objs/c_effect.o objs/c_level.o objs/c_vote.o objs/cmdlib.o objs/d_dehacked.o objs/d_items.o objs/d_main_common.o objs/d_netcmd.o objs/d_protocol.o objs/dobject.o objs/doomstat.o objs/dsectoreffect.o objs/dthinker.o objs/farchive.o objs/gi.o objs/huffman.o objs/i_net.o objs/info.o objs/m_alloc.o objs/m_argv.o objs/m_bbox.o objs/m_cheat.o objs/m_fileio.o objs/m_memio.o objs/m_random.o objs/m_swap.o objs/md5.o objs/minilzo.o objs/p_acs.o objs/p_ceiling.o objs/p_doors.o objs/p_enemy.o objs/p_floor.o objs/p_interaction.o objs/p_lights.o objs/p_lnspec.o objs/p_map.o objs/p_maputl.o objs/p_mobj.o objs/p_pillar.o objs/p_plats.o objs/p_pspr.o objs/p_quake.o objs/p_saveg.o objs/p_setup.o objs/p_sight.o objs/p_snapshot.o objs/p_spec.o objs/p_switch.o objs/p_teleport.o objs/p_things.o objs/p_tick.o objs/p_unlag.o objs/p_user.o objs/p_xlat.o objs/po_man.o objs/r_data.o objs/s_sndseq.o objs/sc_man.o objs/stats.o objs/stringtable.o objs/strptime.o objs/tables.o objs/timegm.o objs/vectors.o objs/version.o objs/w_wad.o objs/z_zone.o objs/am_map.o objs/c_bind.o objs/c_console.o objs/cl_ctf.o objs/cl_cvarlist.o objs/cl_demo.o objs/cl_download.o objs/cl_main.o objs/cl_maplist.o objs/cl_mobj.o objs/cl_netgraph.o objs/cl_pred.o objs/cl_stubs.o objs/cl_vote.o objs/d_main.o objs/d_net.o objs/d_netinfo.o objs/f_finale.o objs/f_wipe.o objs/g_game.o objs/g_level.o objs/g_warmup.o objs/hu_drawers.o objs/hu_elements.o objs/hu_mousegraph.o objs/hu_stuff.o objs/m_menu.o objs/m_misc.o objs/m_options.o objs/p_effect.o objs/r_bsp.o objs/r_draw.o objs/r_drawt.o objs/r_drawt_altivec.o objs/r_drawt_mmx.o objs/r_drawt_sse2.o objs/r_main.o objs/r_plane.o objs/r_segs.o objs/r_sky.o objs/r_things.o objs/s_sound.o objs/st_lib.o objs/st_new.o objs/st_stuff.o objs/v_draw.o objs/v_palette.o objs/v_text.o objs/v_video.o objs/wi_stuff.o objs/hardware.o objs/i_input.o objs/i_main.o objs/i_midi.o objs/i_music.o objs/i_musicsystem.o objs/i_sdlvideo.o objs/i_sound.o objs/i_system.o objs/mus2midi.o objs/txt_button.o objs/txt_checkbox.o objs/txt_desktop.o objs/txt_dropdown.o objs/txt_gui.o objs/txt_inputbox.o objs/txt_io.o objs/txt_label.o objs/txt_radiobutton.o objs/txt_scrollpane.o objs/txt_sdl.o objs/txt_separator.o objs/txt_spinctrl.o objs/txt_strut.o objs/txt_table.o objs/txt_utf8.o objs/txt_widget.o objs/txt_window.o objs/txt_window_action.o $(RES)
+LINKOBJ  = objs/c_cvarlist.o objs/c_cvars.o objs/c_dispatch.o objs/c_effect.o objs/c_level.o objs/c_vote.o objs/cmdlib.o objs/d_dehacked.o objs/d_items.o objs/d_main_common.o objs/d_netcmd.o objs/d_protocol.o objs/dobject.o objs/doomstat.o objs/dsectoreffect.o objs/dthinker.o objs/farchive.o objs/gi.o objs/huffman.o objs/i_net.o objs/info.o objs/m_alloc.o objs/m_argv.o objs/m_bbox.o objs/m_cheat.o objs/m_fileio.o objs/m_memio.o objs/m_random.o objs/m_swap.o objs/md5.o objs/minilzo.o objs/p_acs.o objs/p_ceiling.o objs/p_doors.o objs/p_enemy.o objs/p_floor.o objs/p_interaction.o objs/p_lights.o objs/p_lnspec.o objs/p_map.o objs/p_maputl.o objs/p_mobj.o objs/p_pillar.o objs/p_plats.o objs/p_pspr.o objs/p_quake.o objs/p_saveg.o objs/p_setup.o objs/p_sight.o objs/p_snapshot.o objs/p_spec.o objs/p_switch.o objs/p_teleport.o objs/p_things.o objs/p_tick.o objs/p_unlag.o objs/p_user.o objs/p_xlat.o objs/po_man.o objs/r_data.o objs/s_sndseq.o objs/sc_man.o objs/stats.o objs/stringtable.o objs/strptime.o objs/tables.o objs/timegm.o objs/vectors.o objs/version.o objs/w_wad.o objs/z_zone.o objs/am_map.o objs/c_bind.o objs/c_console.o objs/cl_ctf.o objs/cl_cvarlist.o objs/cl_demo.o objs/cl_download.o objs/cl_main.o objs/cl_maplist.o objs/cl_mobj.o objs/cl_netgraph.o objs/cl_pred.o objs/cl_stubs.o objs/cl_vote.o objs/d_main.o objs/d_net.o objs/d_netinfo.o objs/f_finale.o objs/f_wipe.o objs/g_game.o objs/g_level.o objs/g_warmup.o objs/hu_drawers.o objs/hu_elements.o objs/hu_mousegraph.o objs/hu_stuff.o objs/m_menu.o objs/m_misc.o objs/m_options.o objs/p_effect.o objs/r_bsp.o objs/r_draw.o objs/r_drawt.o objs/r_drawt_altivec.o objs/r_drawt_mmx.o objs/r_drawt_sse2.o objs/r_main.o objs/r_plane.o objs/r_segs.o objs/r_sky.o objs/r_things.o objs/s_sound.o objs/st_lib.o objs/st_new.o objs/st_stuff.o objs/v_draw.o objs/v_palette.o objs/v_text.o objs/v_video.o objs/wi_stuff.o objs/hardware.o objs/i_input.o objs/i_main.o objs/i_midi.o objs/i_music.o objs/i_musicsystem.o objs/i_sdlvideo.o objs/i_sound.o objs/i_system.o objs/mus2midi.o objs/txt_button.o objs/txt_checkbox.o objs/txt_desktop.o objs/txt_dropdown.o objs/txt_gui.o objs/txt_inputbox.o objs/txt_io.o objs/txt_label.o objs/txt_radiobutton.o objs/txt_scrollpane.o objs/txt_sdl.o objs/txt_separator.o objs/txt_spinctrl.o objs/txt_strut.o objs/txt_table.o objs/txt_utf8.o objs/txt_widget.o objs/txt_window.o objs/txt_window_action.o $(RES)
+LIBS =  -L"C:/Dev-Cpp/lib" -L"SDL_mixer-1.2.12/lib" -L"SDL-1.2.15/lib" -mwindows -lwsock32 -lshlwapi -lwinmm -lSDL -lSDL_mixer  
+INCS =  -I"C:/Dev-Cpp/include"  -I"../common"  -I"../client/sdl"  -I"../client/src"  -I"../textscreen"  -I"SDL-1.2.15/include"  -I"SDL_mixer-1.2.12/include" 
+CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"../common"  -I"../client/sdl"  -I"../client/src"  -I"../textscreen"  -I"SDL-1.2.15/include"  -I"SDL_mixer-1.2.12/include" 
+BIN  = odamex.exe
+CXXFLAGS = $(CXXINCS) -O3 -funroll-loops -ffast-math -funit-at-a-time -mmmx
+CFLAGS = $(INCS) -O3 -funroll-loops -ffast-math -funit-at-a-time -mmmx
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before odamex.exe all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o "odamex.exe" $(LIBS)
+
+objs/c_cvarlist.o: ../common/c_cvarlist.cpp
+	$(CPP) -c ../common/c_cvarlist.cpp -o objs/c_cvarlist.o $(CXXFLAGS)
+
+objs/c_cvars.o: ../common/c_cvars.cpp
+	$(CPP) -c ../common/c_cvars.cpp -o objs/c_cvars.o $(CXXFLAGS)
+
+objs/c_dispatch.o: ../common/c_dispatch.cpp
+	$(CPP) -c ../common/c_dispatch.cpp -o objs/c_dispatch.o $(CXXFLAGS)
+
+objs/c_effect.o: ../common/c_effect.cpp
+	$(CPP) -c ../common/c_effect.cpp -o objs/c_effect.o $(CXXFLAGS)
+
+objs/c_level.o: ../common/c_level.cpp
+	$(CPP) -c ../common/c_level.cpp -o objs/c_level.o $(CXXFLAGS)
+
+objs/c_vote.o: ../common/c_vote.cpp
+	$(CPP) -c ../common/c_vote.cpp -o objs/c_vote.o $(CXXFLAGS)
+
+objs/cmdlib.o: ../common/cmdlib.cpp
+	$(CPP) -c ../common/cmdlib.cpp -o objs/cmdlib.o $(CXXFLAGS)
+
+objs/d_dehacked.o: ../common/d_dehacked.cpp
+	$(CPP) -c ../common/d_dehacked.cpp -o objs/d_dehacked.o $(CXXFLAGS)
+
+objs/d_items.o: ../common/d_items.cpp
+	$(CPP) -c ../common/d_items.cpp -o objs/d_items.o $(CXXFLAGS)
+
+objs/d_main_common.o: ../common/d_main.cpp
+	$(CPP) -c ../common/d_main.cpp -o objs/d_main_common.o $(CXXFLAGS)
+
+objs/d_netcmd.o: ../common/d_netcmd.cpp
+	$(CPP) -c ../common/d_netcmd.cpp -o objs/d_netcmd.o $(CXXFLAGS)
+
+objs/d_protocol.o: ../common/d_protocol.cpp
+	$(CPP) -c ../common/d_protocol.cpp -o objs/d_protocol.o $(CXXFLAGS)
+
+objs/dobject.o: ../common/dobject.cpp
+	$(CPP) -c ../common/dobject.cpp -o objs/dobject.o $(CXXFLAGS)
+
+objs/doomstat.o: ../common/doomstat.cpp
+	$(CPP) -c ../common/doomstat.cpp -o objs/doomstat.o $(CXXFLAGS)
+
+objs/dsectoreffect.o: ../common/dsectoreffect.cpp
+	$(CPP) -c ../common/dsectoreffect.cpp -o objs/dsectoreffect.o $(CXXFLAGS)
+
+objs/dthinker.o: ../common/dthinker.cpp
+	$(CPP) -c ../common/dthinker.cpp -o objs/dthinker.o $(CXXFLAGS)
+
+objs/farchive.o: ../common/farchive.cpp
+	$(CPP) -c ../common/farchive.cpp -o objs/farchive.o $(CXXFLAGS)
+
+objs/gi.o: ../common/gi.cpp
+	$(CPP) -c ../common/gi.cpp -o objs/gi.o $(CXXFLAGS)
+
+objs/huffman.o: ../common/huffman.cpp
+	$(CPP) -c ../common/huffman.cpp -o objs/huffman.o $(CXXFLAGS)
+
+objs/i_net.o: ../common/i_net.cpp
+	$(CPP) -c ../common/i_net.cpp -o objs/i_net.o $(CXXFLAGS)
+
+objs/info.o: ../common/info.cpp
+	$(CPP) -c ../common/info.cpp -o objs/info.o $(CXXFLAGS)
+
+objs/m_alloc.o: ../common/m_alloc.cpp
+	$(CPP) -c ../common/m_alloc.cpp -o objs/m_alloc.o $(CXXFLAGS)
+
+objs/m_argv.o: ../common/m_argv.cpp
+	$(CPP) -c ../common/m_argv.cpp -o objs/m_argv.o $(CXXFLAGS)
+
+objs/m_bbox.o: ../common/m_bbox.cpp
+	$(CPP) -c ../common/m_bbox.cpp -o objs/m_bbox.o $(CXXFLAGS)
+
+objs/m_cheat.o: ../common/m_cheat.cpp
+	$(CPP) -c ../common/m_cheat.cpp -o objs/m_cheat.o $(CXXFLAGS)
+
+objs/m_fileio.o: ../common/m_fileio.cpp
+	$(CPP) -c ../common/m_fileio.cpp -o objs/m_fileio.o $(CXXFLAGS)
+
+objs/m_memio.o: ../common/m_memio.cpp
+	$(CPP) -c ../common/m_memio.cpp -o objs/m_memio.o $(CXXFLAGS)
+
+objs/m_random.o: ../common/m_random.cpp
+	$(CPP) -c ../common/m_random.cpp -o objs/m_random.o $(CXXFLAGS)
+
+objs/m_swap.o: ../common/m_swap.cpp
+	$(CPP) -c ../common/m_swap.cpp -o objs/m_swap.o $(CXXFLAGS)
+
+objs/md5.o: ../common/md5.cpp
+	$(CPP) -c ../common/md5.cpp -o objs/md5.o $(CXXFLAGS)
+
+objs/minilzo.o: ../common/minilzo.cpp
+	$(CPP) -c ../common/minilzo.cpp -o objs/minilzo.o $(CXXFLAGS)
+
+objs/p_acs.o: ../common/p_acs.cpp
+	$(CPP) -c ../common/p_acs.cpp -o objs/p_acs.o $(CXXFLAGS)
+
+objs/p_ceiling.o: ../common/p_ceiling.cpp
+	$(CPP) -c ../common/p_ceiling.cpp -o objs/p_ceiling.o $(CXXFLAGS)
+
+objs/p_doors.o: ../common/p_doors.cpp
+	$(CPP) -c ../common/p_doors.cpp -o objs/p_doors.o $(CXXFLAGS)
+
+objs/p_enemy.o: ../common/p_enemy.cpp
+	$(CPP) -c ../common/p_enemy.cpp -o objs/p_enemy.o $(CXXFLAGS)
+
+objs/p_floor.o: ../common/p_floor.cpp
+	$(CPP) -c ../common/p_floor.cpp -o objs/p_floor.o $(CXXFLAGS)
+
+objs/p_interaction.o: ../common/p_interaction.cpp
+	$(CPP) -c ../common/p_interaction.cpp -o objs/p_interaction.o $(CXXFLAGS)
+
+objs/p_lights.o: ../common/p_lights.cpp
+	$(CPP) -c ../common/p_lights.cpp -o objs/p_lights.o $(CXXFLAGS)
+
+objs/p_lnspec.o: ../common/p_lnspec.cpp
+	$(CPP) -c ../common/p_lnspec.cpp -o objs/p_lnspec.o $(CXXFLAGS)
+
+objs/p_map.o: ../common/p_map.cpp
+	$(CPP) -c ../common/p_map.cpp -o objs/p_map.o $(CXXFLAGS)
+
+objs/p_maputl.o: ../common/p_maputl.cpp
+	$(CPP) -c ../common/p_maputl.cpp -o objs/p_maputl.o $(CXXFLAGS)
+
+objs/p_mobj.o: ../common/p_mobj.cpp
+	$(CPP) -c ../common/p_mobj.cpp -o objs/p_mobj.o $(CXXFLAGS)
+
+objs/p_pillar.o: ../common/p_pillar.cpp
+	$(CPP) -c ../common/p_pillar.cpp -o objs/p_pillar.o $(CXXFLAGS)
+
+objs/p_plats.o: ../common/p_plats.cpp
+	$(CPP) -c ../common/p_plats.cpp -o objs/p_plats.o $(CXXFLAGS)
+
+objs/p_pspr.o: ../common/p_pspr.cpp
+	$(CPP) -c ../common/p_pspr.cpp -o objs/p_pspr.o $(CXXFLAGS)
+
+objs/p_quake.o: ../common/p_quake.cpp
+	$(CPP) -c ../common/p_quake.cpp -o objs/p_quake.o $(CXXFLAGS)
+
+objs/p_saveg.o: ../common/p_saveg.cpp
+	$(CPP) -c ../common/p_saveg.cpp -o objs/p_saveg.o $(CXXFLAGS)
+
+objs/p_setup.o: ../common/p_setup.cpp
+	$(CPP) -c ../common/p_setup.cpp -o objs/p_setup.o $(CXXFLAGS)
+
+objs/p_sight.o: ../common/p_sight.cpp
+	$(CPP) -c ../common/p_sight.cpp -o objs/p_sight.o $(CXXFLAGS)
+
+objs/p_snapshot.o: ../common/p_snapshot.cpp
+	$(CPP) -c ../common/p_snapshot.cpp -o objs/p_snapshot.o $(CXXFLAGS)
+
+objs/p_spec.o: ../common/p_spec.cpp
+	$(CPP) -c ../common/p_spec.cpp -o objs/p_spec.o $(CXXFLAGS)
+
+objs/p_switch.o: ../common/p_switch.cpp
+	$(CPP) -c ../common/p_switch.cpp -o objs/p_switch.o $(CXXFLAGS)
+
+objs/p_teleport.o: ../common/p_teleport.cpp
+	$(CPP) -c ../common/p_teleport.cpp -o objs/p_teleport.o $(CXXFLAGS)
+
+objs/p_things.o: ../common/p_things.cpp
+	$(CPP) -c ../common/p_things.cpp -o objs/p_things.o $(CXXFLAGS)
+
+objs/p_tick.o: ../common/p_tick.cpp
+	$(CPP) -c ../common/p_tick.cpp -o objs/p_tick.o $(CXXFLAGS)
+
+objs/p_unlag.o: ../common/p_unlag.cpp
+	$(CPP) -c ../common/p_unlag.cpp -o objs/p_unlag.o $(CXXFLAGS)
+
+objs/p_user.o: ../common/p_user.cpp
+	$(CPP) -c ../common/p_user.cpp -o objs/p_user.o $(CXXFLAGS)
+
+objs/p_xlat.o: ../common/p_xlat.cpp
+	$(CPP) -c ../common/p_xlat.cpp -o objs/p_xlat.o $(CXXFLAGS)
+
+objs/po_man.o: ../common/po_man.cpp
+	$(CPP) -c ../common/po_man.cpp -o objs/po_man.o $(CXXFLAGS)
+
+objs/r_data.o: ../common/r_data.cpp
+	$(CPP) -c ../common/r_data.cpp -o objs/r_data.o $(CXXFLAGS)
+
+objs/s_sndseq.o: ../common/s_sndseq.cpp
+	$(CPP) -c ../common/s_sndseq.cpp -o objs/s_sndseq.o $(CXXFLAGS)
+
+objs/sc_man.o: ../common/sc_man.cpp
+	$(CPP) -c ../common/sc_man.cpp -o objs/sc_man.o $(CXXFLAGS)
+
+objs/stats.o: ../common/stats.cpp
+	$(CPP) -c ../common/stats.cpp -o objs/stats.o $(CXXFLAGS)
+
+objs/stringtable.o: ../common/stringtable.cpp
+	$(CPP) -c ../common/stringtable.cpp -o objs/stringtable.o $(CXXFLAGS)
+
+objs/strptime.o: ../common/strptime.cpp
+	$(CPP) -c ../common/strptime.cpp -o objs/strptime.o $(CXXFLAGS)
+
+objs/tables.o: ../common/tables.cpp
+	$(CPP) -c ../common/tables.cpp -o objs/tables.o $(CXXFLAGS)
+
+objs/timegm.o: ../common/timegm.cpp
+	$(CPP) -c ../common/timegm.cpp -o objs/timegm.o $(CXXFLAGS)
+
+objs/vectors.o: ../common/vectors.cpp
+	$(CPP) -c ../common/vectors.cpp -o objs/vectors.o $(CXXFLAGS)
+
+objs/version.o: ../common/version.cpp
+	$(CPP) -c ../common/version.cpp -o objs/version.o $(CXXFLAGS)
+
+objs/w_wad.o: ../common/w_wad.cpp
+	$(CPP) -c ../common/w_wad.cpp -o objs/w_wad.o $(CXXFLAGS)
+
+objs/z_zone.o: ../common/z_zone.cpp
+	$(CPP) -c ../common/z_zone.cpp -o objs/z_zone.o $(CXXFLAGS)
+
+objs/am_map.o: ../client/src/am_map.cpp
+	$(CPP) -c ../client/src/am_map.cpp -o objs/am_map.o $(CXXFLAGS)
+
+objs/c_bind.o: ../client/src/c_bind.cpp
+	$(CPP) -c ../client/src/c_bind.cpp -o objs/c_bind.o $(CXXFLAGS)
+
+objs/c_console.o: ../client/src/c_console.cpp
+	$(CPP) -c ../client/src/c_console.cpp -o objs/c_console.o $(CXXFLAGS)
+
+objs/cl_ctf.o: ../client/src/cl_ctf.cpp
+	$(CPP) -c ../client/src/cl_ctf.cpp -o objs/cl_ctf.o $(CXXFLAGS)
+
+objs/cl_cvarlist.o: ../client/src/cl_cvarlist.cpp
+	$(CPP) -c ../client/src/cl_cvarlist.cpp -o objs/cl_cvarlist.o $(CXXFLAGS)
+
+objs/cl_demo.o: ../client/src/cl_demo.cpp
+	$(CPP) -c ../client/src/cl_demo.cpp -o objs/cl_demo.o $(CXXFLAGS)
+
+objs/cl_download.o: ../client/src/cl_download.cpp
+	$(CPP) -c ../client/src/cl_download.cpp -o objs/cl_download.o $(CXXFLAGS)
+
+objs/cl_main.o: ../client/src/cl_main.cpp
+	$(CPP) -c ../client/src/cl_main.cpp -o objs/cl_main.o $(CXXFLAGS)
+
+objs/cl_maplist.o: ../client/src/cl_maplist.cpp
+	$(CPP) -c ../client/src/cl_maplist.cpp -o objs/cl_maplist.o $(CXXFLAGS)
+
+objs/cl_mobj.o: ../client/src/cl_mobj.cpp
+	$(CPP) -c ../client/src/cl_mobj.cpp -o objs/cl_mobj.o $(CXXFLAGS)
+
+objs/cl_netgraph.o: ../client/src/cl_netgraph.cpp
+	$(CPP) -c ../client/src/cl_netgraph.cpp -o objs/cl_netgraph.o $(CXXFLAGS)
+
+objs/cl_pred.o: ../client/src/cl_pred.cpp
+	$(CPP) -c ../client/src/cl_pred.cpp -o objs/cl_pred.o $(CXXFLAGS)
+
+objs/cl_stubs.o: ../client/src/cl_stubs.cpp
+	$(CPP) -c ../client/src/cl_stubs.cpp -o objs/cl_stubs.o $(CXXFLAGS)
+
+objs/cl_vote.o: ../client/src/cl_vote.cpp
+	$(CPP) -c ../client/src/cl_vote.cpp -o objs/cl_vote.o $(CXXFLAGS)
+
+objs/d_main.o: ../client/src/d_main.cpp
+	$(CPP) -c ../client/src/d_main.cpp -o objs/d_main.o $(CXXFLAGS)
+
+objs/d_net.o: ../client/src/d_net.cpp
+	$(CPP) -c ../client/src/d_net.cpp -o objs/d_net.o $(CXXFLAGS)
+
+objs/d_netinfo.o: ../client/src/d_netinfo.cpp
+	$(CPP) -c ../client/src/d_netinfo.cpp -o objs/d_netinfo.o $(CXXFLAGS)
+
+objs/f_finale.o: ../client/src/f_finale.cpp
+	$(CPP) -c ../client/src/f_finale.cpp -o objs/f_finale.o $(CXXFLAGS)
+
+objs/f_wipe.o: ../client/src/f_wipe.cpp
+	$(CPP) -c ../client/src/f_wipe.cpp -o objs/f_wipe.o $(CXXFLAGS)
+
+objs/g_game.o: ../client/src/g_game.cpp
+	$(CPP) -c ../client/src/g_game.cpp -o objs/g_game.o $(CXXFLAGS)
+
+objs/g_level.o: ../client/src/g_level.cpp
+	$(CPP) -c ../client/src/g_level.cpp -o objs/g_level.o $(CXXFLAGS)
+
+objs/g_warmup.o: ../client/src/g_warmup.cpp
+	$(CPP) -c ../client/src/g_warmup.cpp -o objs/g_warmup.o $(CXXFLAGS)
+
+objs/hu_drawers.o: ../client/src/hu_drawers.cpp
+	$(CPP) -c ../client/src/hu_drawers.cpp -o objs/hu_drawers.o $(CXXFLAGS)
+
+objs/hu_elements.o: ../client/src/hu_elements.cpp
+	$(CPP) -c ../client/src/hu_elements.cpp -o objs/hu_elements.o $(CXXFLAGS)
+
+objs/hu_mousegraph.o: ../client/src/hu_mousegraph.cpp
+	$(CPP) -c ../client/src/hu_mousegraph.cpp -o objs/hu_mousegraph.o $(CXXFLAGS)
+
+objs/hu_stuff.o: ../client/src/hu_stuff.cpp
+	$(CPP) -c ../client/src/hu_stuff.cpp -o objs/hu_stuff.o $(CXXFLAGS)
+
+objs/m_menu.o: ../client/src/m_menu.cpp
+	$(CPP) -c ../client/src/m_menu.cpp -o objs/m_menu.o $(CXXFLAGS)
+
+objs/m_misc.o: ../client/src/m_misc.cpp
+	$(CPP) -c ../client/src/m_misc.cpp -o objs/m_misc.o $(CXXFLAGS)
+
+objs/m_options.o: ../client/src/m_options.cpp
+	$(CPP) -c ../client/src/m_options.cpp -o objs/m_options.o $(CXXFLAGS)
+
+objs/p_effect.o: ../client/src/p_effect.cpp
+	$(CPP) -c ../client/src/p_effect.cpp -o objs/p_effect.o $(CXXFLAGS)
+
+objs/r_bsp.o: ../client/src/r_bsp.cpp
+	$(CPP) -c ../client/src/r_bsp.cpp -o objs/r_bsp.o $(CXXFLAGS)
+
+objs/r_draw.o: ../client/src/r_draw.cpp
+	$(CPP) -c ../client/src/r_draw.cpp -o objs/r_draw.o $(CXXFLAGS)
+
+objs/r_drawt.o: ../client/src/r_drawt.cpp
+	$(CPP) -c ../client/src/r_drawt.cpp -o objs/r_drawt.o $(CXXFLAGS)
+
+objs/r_drawt_altivec.o: ../client/src/r_drawt_altivec.cpp
+	$(CPP) -c ../client/src/r_drawt_altivec.cpp -o objs/r_drawt_altivec.o $(CXXFLAGS)
+
+objs/r_drawt_mmx.o: ../client/src/r_drawt_mmx.cpp
+	$(CPP) -c ../client/src/r_drawt_mmx.cpp -o objs/r_drawt_mmx.o $(CXXFLAGS)
+
+objs/r_drawt_sse2.o: ../client/src/r_drawt_sse2.cpp
+	$(CPP) -c ../client/src/r_drawt_sse2.cpp -o objs/r_drawt_sse2.o $(CXXFLAGS)
+
+objs/r_main.o: ../client/src/r_main.cpp
+	$(CPP) -c ../client/src/r_main.cpp -o objs/r_main.o $(CXXFLAGS)
+
+objs/r_plane.o: ../client/src/r_plane.cpp
+	$(CPP) -c ../client/src/r_plane.cpp -o objs/r_plane.o $(CXXFLAGS)
+
+objs/r_segs.o: ../client/src/r_segs.cpp
+	$(CPP) -c ../client/src/r_segs.cpp -o objs/r_segs.o $(CXXFLAGS)
+
+objs/r_sky.o: ../client/src/r_sky.cpp
+	$(CPP) -c ../client/src/r_sky.cpp -o objs/r_sky.o $(CXXFLAGS)
+
+objs/r_things.o: ../client/src/r_things.cpp
+	$(CPP) -c ../client/src/r_things.cpp -o objs/r_things.o $(CXXFLAGS)
+
+objs/s_sound.o: ../client/src/s_sound.cpp
+	$(CPP) -c ../client/src/s_sound.cpp -o objs/s_sound.o $(CXXFLAGS)
+
+objs/st_lib.o: ../client/src/st_lib.cpp
+	$(CPP) -c ../client/src/st_lib.cpp -o objs/st_lib.o $(CXXFLAGS)
+
+objs/st_new.o: ../client/src/st_new.cpp
+	$(CPP) -c ../client/src/st_new.cpp -o objs/st_new.o $(CXXFLAGS)
+
+objs/st_stuff.o: ../client/src/st_stuff.cpp
+	$(CPP) -c ../client/src/st_stuff.cpp -o objs/st_stuff.o $(CXXFLAGS)
+
+objs/v_draw.o: ../client/src/v_draw.cpp
+	$(CPP) -c ../client/src/v_draw.cpp -o objs/v_draw.o $(CXXFLAGS)
+
+objs/v_palette.o: ../client/src/v_palette.cpp
+	$(CPP) -c ../client/src/v_palette.cpp -o objs/v_palette.o $(CXXFLAGS)
+
+objs/v_text.o: ../client/src/v_text.cpp
+	$(CPP) -c ../client/src/v_text.cpp -o objs/v_text.o $(CXXFLAGS)
+
+objs/v_video.o: ../client/src/v_video.cpp
+	$(CPP) -c ../client/src/v_video.cpp -o objs/v_video.o $(CXXFLAGS)
+
+objs/wi_stuff.o: ../client/src/wi_stuff.cpp
+	$(CPP) -c ../client/src/wi_stuff.cpp -o objs/wi_stuff.o $(CXXFLAGS)
+
+objs/hardware.o: ../client/sdl/hardware.cpp
+	$(CPP) -c ../client/sdl/hardware.cpp -o objs/hardware.o $(CXXFLAGS)
+
+objs/i_input.o: ../client/sdl/i_input.cpp
+	$(CPP) -c ../client/sdl/i_input.cpp -o objs/i_input.o $(CXXFLAGS)
+
+objs/i_main.o: ../client/sdl/i_main.cpp
+	$(CPP) -c ../client/sdl/i_main.cpp -o objs/i_main.o $(CXXFLAGS)
+
+objs/i_midi.o: ../client/sdl/i_midi.cpp
+	$(CPP) -c ../client/sdl/i_midi.cpp -o objs/i_midi.o $(CXXFLAGS)
+
+objs/i_music.o: ../client/sdl/i_music.cpp
+	$(CPP) -c ../client/sdl/i_music.cpp -o objs/i_music.o $(CXXFLAGS)
+
+objs/i_musicsystem.o: ../client/sdl/i_musicsystem.cpp
+	$(CPP) -c ../client/sdl/i_musicsystem.cpp -o objs/i_musicsystem.o $(CXXFLAGS)
+
+objs/i_sdlvideo.o: ../client/sdl/i_sdlvideo.cpp
+	$(CPP) -c ../client/sdl/i_sdlvideo.cpp -o objs/i_sdlvideo.o $(CXXFLAGS)
+
+objs/i_sound.o: ../client/sdl/i_sound.cpp
+	$(CPP) -c ../client/sdl/i_sound.cpp -o objs/i_sound.o $(CXXFLAGS)
+
+objs/i_system.o: ../client/sdl/i_system.cpp
+	$(CPP) -c ../client/sdl/i_system.cpp -o objs/i_system.o $(CXXFLAGS)
+
+objs/mus2midi.o: ../client/sdl/mus2midi.cpp
+	$(CPP) -c ../client/sdl/mus2midi.cpp -o objs/mus2midi.o $(CXXFLAGS)
+
+objs/txt_button.o: ../textscreen/txt_button.c
+	$(CC) -c ../textscreen/txt_button.c -o objs/txt_button.o $(CFLAGS)
+
+objs/txt_checkbox.o: ../textscreen/txt_checkbox.c
+	$(CC) -c ../textscreen/txt_checkbox.c -o objs/txt_checkbox.o $(CFLAGS)
+
+objs/txt_desktop.o: ../textscreen/txt_desktop.c
+	$(CC) -c ../textscreen/txt_desktop.c -o objs/txt_desktop.o $(CFLAGS)
+
+objs/txt_dropdown.o: ../textscreen/txt_dropdown.c
+	$(CC) -c ../textscreen/txt_dropdown.c -o objs/txt_dropdown.o $(CFLAGS)
+
+objs/txt_gui.o: ../textscreen/txt_gui.c
+	$(CC) -c ../textscreen/txt_gui.c -o objs/txt_gui.o $(CFLAGS)
+
+objs/txt_inputbox.o: ../textscreen/txt_inputbox.c
+	$(CC) -c ../textscreen/txt_inputbox.c -o objs/txt_inputbox.o $(CFLAGS)
+
+objs/txt_io.o: ../textscreen/txt_io.c
+	$(CC) -c ../textscreen/txt_io.c -o objs/txt_io.o $(CFLAGS)
+
+objs/txt_label.o: ../textscreen/txt_label.c
+	$(CC) -c ../textscreen/txt_label.c -o objs/txt_label.o $(CFLAGS)
+
+objs/txt_radiobutton.o: ../textscreen/txt_radiobutton.c
+	$(CC) -c ../textscreen/txt_radiobutton.c -o objs/txt_radiobutton.o $(CFLAGS)
+
+objs/txt_scrollpane.o: ../textscreen/txt_scrollpane.c
+	$(CC) -c ../textscreen/txt_scrollpane.c -o objs/txt_scrollpane.o $(CFLAGS)
+
+objs/txt_sdl.o: ../textscreen/txt_sdl.c
+	$(CC) -c ../textscreen/txt_sdl.c -o objs/txt_sdl.o $(CFLAGS)
+
+objs/txt_separator.o: ../textscreen/txt_separator.c
+	$(CC) -c ../textscreen/txt_separator.c -o objs/txt_separator.o $(CFLAGS)
+
+objs/txt_spinctrl.o: ../textscreen/txt_spinctrl.c
+	$(CC) -c ../textscreen/txt_spinctrl.c -o objs/txt_spinctrl.o $(CFLAGS)
+
+objs/txt_strut.o: ../textscreen/txt_strut.c
+	$(CC) -c ../textscreen/txt_strut.c -o objs/txt_strut.o $(CFLAGS)
+
+objs/txt_table.o: ../textscreen/txt_table.c
+	$(CC) -c ../textscreen/txt_table.c -o objs/txt_table.o $(CFLAGS)
+
+objs/txt_utf8.o: ../textscreen/txt_utf8.c
+	$(CC) -c ../textscreen/txt_utf8.c -o objs/txt_utf8.o $(CFLAGS)
+
+objs/txt_widget.o: ../textscreen/txt_widget.c
+	$(CC) -c ../textscreen/txt_widget.c -o objs/txt_widget.o $(CFLAGS)
+
+objs/txt_window.o: ../textscreen/txt_window.c
+	$(CC) -c ../textscreen/txt_window.c -o objs/txt_window.o $(CFLAGS)
+
+objs/txt_window_action.o: ../textscreen/txt_window_action.c
+	$(CC) -c ../textscreen/txt_window_action.c -o objs/txt_window_action.o $(CFLAGS)
+
+objs/odamex_private.res: odamex_private.rc ../client/sdl/client.rc 
+	$(WINDRES) -i odamex_private.rc --input-format=rc -o objs/odamex_private.res -O coff  --include-dir ../client/sdl
