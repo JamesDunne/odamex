@@ -864,9 +864,9 @@ void BuildColoredLights (const shademap_t *maps, int lr, int lg, int lb, int r, 
 		shade = maps->shademap + 256*l;
 		for (c = 0; c < 256; c++) {
 			shade[c] = MAKERGB(
-				(RPART(colors[c])*lr)/255,
-				(GPART(colors[c])*lg)/255,
-				(BPART(colors[c])*lb)/255
+				newgamma[(RPART(colors[c])*lr)/255],
+				newgamma[(GPART(colors[c])*lg)/255],
+				newgamma[(BPART(colors[c])*lb)/255]
 			);
 			color[c] = BestColor(
 				DefPal.basecolors,

@@ -24,7 +24,13 @@ Planned Changes
 
 Known Issues
 ------------
-None
+ * Still rendering 8bpp colors for player in player setup menu in 32bpp mode
+
+Fixed Issues
+------------
+ * Gamma not being maintained between map changes
+ * 32bpp player color translation
+ * Invulnerability effect in 32bpp now correct (doors in map32 had a white strip in the middle where it should be black)
 
 Code Changes
 ------------

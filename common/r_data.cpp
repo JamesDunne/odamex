@@ -828,7 +828,7 @@ void R_InitColormaps (void)
 	fakecmaps = (FakeCmap *)Z_Malloc (sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
 
 	fakecmaps[0].name[0] = 0;
-	R_SetDefaultColormap ("COLORMAP");
+	R_ForceDefaultColormap ("COLORMAP");
 
 	if (numfakecmaps > 1)
 	{

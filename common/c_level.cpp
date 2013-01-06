@@ -1090,7 +1090,7 @@ void G_InitLevelLocals ()
 		if (level.fadeto) {
 			NormalLight.maps = shaderef_t(&DefaultPalette->maps, 0);
 		} else {
-			R_SetDefaultColormap (pinfo->fadetable);
+			R_ForceDefaultColormap (pinfo->fadetable);
 		}
 		level.outsidefog = pinfo->outsidefog;
 		level.flags |= LEVEL_DEFINEDINMAPINFO;
@@ -1108,7 +1108,7 @@ void G_InitLevelLocals ()
 		level.skypic2[0] = 0;
 		level.fadeto = 0;
 		level.outsidefog = 0xff000000;	// 0xff000000 signals not to handle it special
-		R_SetDefaultColormap ("COLORMAP");
+		R_ForceDefaultColormap ("COLORMAP");
 	}
 
 	if (info->level_name) {
