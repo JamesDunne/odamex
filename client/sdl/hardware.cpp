@@ -588,7 +588,7 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 					destline = (DWORD *)(dest->buffer + y * dest->pitch) + destx;
 					for (x = 0; x < destwidth; x++)
 					{
-						destline[x] = V_Palette[srcline[x]];
+						destline[x] = V_Palette.shade(srcline[x]);
 					}
 				}
 			}
@@ -601,7 +601,7 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 					destline = (DWORD *)(dest->buffer + y * dest->pitch) + destx;
 					for (x = fracx = 0; x < destwidth; x++, fracx += fracxstep)
 					{
-						destline[x] = V_Palette[srcline[fracx >> FRACBITS]];
+						destline[x] = V_Palette.shade(srcline[fracx >> FRACBITS]);
 					}
 				}
 			}

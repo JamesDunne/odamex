@@ -215,7 +215,7 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 #define SPOT(a) \
 	writepos[a] = (writepos[a] & \
 				 ((BYTEIMG[a+8]<<16)|(BYTEIMG[a+8]<<8)|(BYTEIMG[a+8]))) \
-				 ^ V_Palette[BYTEIMG[a]]
+				 ^ V_Palette.shade(BYTEIMG[a])
 
 				SPOT(0);
 				SPOT(1);
@@ -354,7 +354,7 @@ void DCanvas::TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, c
 		normalcolor = CR_RED;
 	boldcolor = normalcolor ? normalcolor - 1 : NUM_TEXT_COLORS - 1;
 
-	V_ColorMap = Ranges + normalcolor * 256;
+	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 
 	ch = string;
 	cx = x;
@@ -390,7 +390,7 @@ void DCanvas::TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, c
 			{
 				continue;
 			}
-			V_ColorMap = Ranges + newcolor * 256;
+			V_ColorMap = translationref_t(Ranges + newcolor * 256);
 			continue;
 		}
 
@@ -436,7 +436,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		normalcolor = CR_RED;
 	boldcolor = normalcolor ? normalcolor - 1 : NUM_TEXT_COLORS - 1;
 
-	V_ColorMap = Ranges + normalcolor * 256;
+	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 
 	ch = string;
 	cx = x;
@@ -472,7 +472,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 			{
 				continue;
 			}
-			V_ColorMap = Ranges + newcolor * 256;
+			V_ColorMap = translationref_t(Ranges + newcolor * 256);
 			continue;
 		}
 

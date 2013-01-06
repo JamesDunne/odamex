@@ -771,7 +771,7 @@ void R_ForceDefaultColormap(const char *name)
 	// Setup shademap to mirror colormapped colors:
 	for (int m = 0; m < (NUMCOLORMAPS+1); ++m)
 		for (int c = 0; c < 256; ++c)
-			realcolormaps.shademap[m*256+c] = V_Palette[realcolormaps.colormap[m*256+c]];
+			realcolormaps.shademap[m*256+c] = V_Palette.shade(realcolormaps.colormap[m*256+c]);
 #else
 	BuildDefaultShademap (DefaultPalette, realcolormaps);
 #endif
@@ -880,7 +880,7 @@ void R_InitColormaps (void)
 					// Set up shademap for the colormap:
 					for (k = 0; k < 256; ++k)
 					{
-						shademap[k] = V_Palette[colormap[k]];
+						shademap[k] = V_Palette.shade(colormap[k]);
 					}
 #if 0
 				}

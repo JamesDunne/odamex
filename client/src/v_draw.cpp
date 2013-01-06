@@ -84,11 +84,11 @@ DCanvas::vdrawsfunc DCanvas::Dsfuncs[6] =
 	(vdrawsfunc)DCanvas::DrawColorLucentPatchD
 };
 
-byte *V_ColorMap;
+translationref_t V_ColorMap;
 int V_ColorFill;
 
 // Palette lookup table for direct modes
-unsigned int *V_Palette;
+shaderef_t V_Palette;
 
 
 /*********************************/
@@ -198,7 +198,7 @@ void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, i
 
 	do
 	{
-		*dest = V_ColorMap[*source++];
+		*dest = V_ColorMap.tlate(*source++);
 		dest += pitch; 
 	} while (--count);
 }
@@ -212,7 +212,7 @@ void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		*dest = V_ColorMap[source[c >> 16]];
+		*dest = V_ColorMap.tlate(source[c >> 16]);
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -226,7 +226,6 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 		return;
 
 	unsigned int *fg2rgb, *bg2rgb;
-	byte *colormap = V_ColorMap;
 
 	{
 		fixed_t fglevel, bglevel, translevel;
@@ -240,7 +239,7 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 
 	do
 	{
-		unsigned int fg = colormap[*source++];
+		unsigned int fg = V_ColorMap.tlate(*source++);
 		unsigned int bg = *dest;
 
 		fg = fg2rgb[fg];
@@ -258,7 +257,6 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 
 	int c = 0;
 	unsigned int *fg2rgb, *bg2rgb;
-	byte *colormap = V_ColorMap;
 
 	{
 		fixed_t fglevel, bglevel, translevel;
@@ -272,7 +270,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 
 	do
 	{
-		unsigned int fg = colormap[source[c >> 16]];
+		unsigned int fg = V_ColorMap.tlate(source[c >> 16]);
 		unsigned int bg = *dest;
 
 		fg = fg2rgb[fg];
@@ -353,7 +351,7 @@ void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
 
 	do
 	{
-		*((unsigned int *)dest) = V_Palette[*source++];
+		*((unsigned int *)dest) = V_Palette.shade(*source++);
 		dest += pitch;
 	} while (--count);
 }
@@ -367,7 +365,7 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 
 	do
 	{
-		*((unsigned int *)dest) = V_Palette[source[c >> 16]];
+		*((unsigned int *)dest) = V_Palette.shade(source[c >> 16]);
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -385,7 +383,7 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 
 	do
 	{
-		DWORD fg = V_Palette[*source++];
+		DWORD fg = V_Palette.shade(*source++);
 		DWORD bg = *((DWORD *)dest);
 #if 1
 		*((DWORD *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
@@ -408,7 +406,7 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 
 	do
 	{
-		DWORD fg = V_Palette[source[c >> 16]];
+		DWORD fg = V_Palette.shade(source[c >> 16]);
 		DWORD bg = *((DWORD *)dest);
 #if 1
 		*((DWORD *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
@@ -429,7 +427,7 @@ void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, i
 
 	do
 	{
-		*((unsigned int *)dest) = V_Palette[V_ColorMap[*source++]];
+		*((unsigned int *)dest) = V_Palette.tlate(*source++, V_ColorMap);
 		dest += pitch; 
 	} while (--count);
 }
@@ -443,7 +441,7 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		*((unsigned int *)dest) = V_Palette[V_ColorMap[source[c >> 16]]];
+		*((unsigned int *)dest) = V_Palette.tlate(source[c >> 16], V_ColorMap);
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -461,7 +459,7 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 
 	do
 	{
-		DWORD fg = V_Palette[V_ColorMap[*source++]];
+		DWORD fg = V_Palette.tlate(*source++, V_ColorMap);
 		DWORD bg = *((DWORD *)dest);
 #if 1
 		*((DWORD *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
@@ -484,7 +482,7 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 
 	do
 	{
-		DWORD fg = V_Palette[V_ColorMap[source[c >> 16]]];
+		DWORD fg = V_Palette.tlate(source[c >> 16], V_ColorMap);
 		DWORD bg = *((DWORD *)dest);
 #if 1
 		*((DWORD *)dest) = alphablend2a(bg, invAlpha, fg, alpha);

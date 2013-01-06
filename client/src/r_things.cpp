@@ -1510,7 +1510,7 @@ static void R_DrawCrosshair (void)
 		else
 			crosshair_trans[crosshair_color] = crosshair_color;	// no trans
 
-		V_ColorMap = crosshair_trans;
+		V_ColorMap = translationref_t(crosshair_trans);
 
 		if (hud_crosshairdim && hud_crosshairscale)
 			screen->DrawTranslatedLucentPatchCleanNoMove (W_CachePatch (crosshair_lump),

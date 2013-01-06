@@ -477,10 +477,10 @@ void V_Init (void);
 extern int V_ColorFill;
 
 // The color map for #1 and #2 above
-extern byte *V_ColorMap;
+extern translationref_t V_ColorMap;
 
 // The palette lookup table to be used with for direct modes
-extern unsigned int *V_Palette;
+extern shaderef_t V_Palette;
 
 void V_MarkRect (int x, int y, int width, int height);
 

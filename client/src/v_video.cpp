@@ -25,6 +25,7 @@
 
 
 #include <stdio.h>
+#include <assert.h>
 
 #include "minilzo.h"
 // [RH] Output buffer size for LZO compression.
@@ -184,10 +185,10 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 				{
 					// Try and let the optimizer pair this on a Pentium
 					// (even though VC++ doesn't anyway)
-					dest[0] = V_Palette[l[z]];
-					dest[1] = V_Palette[l[z+1]];
-					dest[2] = V_Palette[l[z+2]];
-					dest[3] = V_Palette[l[z+3]];
+					dest[0] = V_Palette.shade(l[z+0]);
+					dest[1] = V_Palette.shade(l[z+1]);
+					dest[2] = V_Palette.shade(l[z+2]);
+					dest[3] = V_Palette.shade(l[z+3]);
 				}
 			}
 
@@ -195,13 +196,13 @@ void DCanvas::FlatFill (int left, int top, int right, int bottom, const byte *sr
 			{
 				// Do any odd pixel left over
 				if (width & 1)
-					*dest++ = V_Palette[l[0]];
+					*dest++ = V_Palette.shade(l[0]);
 
 				// Do the rest of the pixels
 				for (z = 1; z < (width & 63); z += 2, dest += 2)
 				{
-					dest[0] = V_Palette[l[z]];
-					dest[1] = V_Palette[l[z+1]];
+					dest[0] = V_Palette.shade(l[z+0]);
+					dest[1] = V_Palette.shade(l[z+1]);
 				}
 			}
 
@@ -659,13 +660,15 @@ void V_InitPalette (void)
 	if (!(DefaultPalette = InitPalettes ("PLAYPAL")))
 		I_FatalError ("Could not initialize palette");
 
-	V_Palette = (unsigned int *)DefaultPalette->colors;
-
 	BuildTransTable (DefaultPalette->basecolors);
 
 	V_ForceBlend (0, 0, 0, 0);
 
 	RefreshPalettes ();
+
+	assert(DefaultPalette->maps.colormap != NULL);
+	assert(DefaultPalette->maps.shademap != NULL);
+	V_Palette = shaderef_t(&DefaultPalette->maps, 0); // (unsigned int *)DefaultPalette->colors;
 }
 
 //

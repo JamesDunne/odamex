@@ -1614,7 +1614,7 @@ static void M_PlayerSetupDrawer (void)
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
-		V_ColorMap = translationtables; // + 0 * 256
+		V_ColorMap = translationref_t(translationtables, 0);
 		//V_ColorMap = translationtables + consoleplayer().id * 256;
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),

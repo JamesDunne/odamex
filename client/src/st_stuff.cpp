@@ -534,7 +534,8 @@ void ST_refreshBackground(void)
 			if (!demoplayback || !democlassic) {
 				// [RH] Always draw faceback with the player's color
 				//		using a translation rather than a different patch.
-				V_ColorMap = translationtables + (displayplayer_id) * 256;
+				//V_ColorMap = translationtables + (displayplayer_id) * 256;
+				V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
 				BG->DrawTranslatedPatch (faceback, ST_FX, ST_FY);
 			} else {
 				BG->DrawPatch (faceclassic[displayplayer_id-1], ST_FX, ST_FY);
