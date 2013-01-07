@@ -1494,7 +1494,6 @@ static void M_PlayerSetupDrawer (void)
 					break;
 
 				case 4:
-				default:
 					for (b = 0; b < FireScreen->height; b++)
 					{
 						byte *to = screen->buffer + y * screen->pitch + x;
@@ -1510,6 +1509,29 @@ static void M_PlayerSetupDrawer (void)
 								*(to + pitch*c + 1) = FireRemap[*from];
 								*(to + pitch*c + 2) = FireRemap[*from];
 								*(to + pitch*c + 3) = FireRemap[*from];
+							}
+						}
+					}
+					break;
+
+				case 5:
+				default:
+					for (b = 0; b < FireScreen->height; b++)
+					{
+						byte *to = screen->buffer + y * screen->pitch + x;
+						from = FireScreen->buffer + b * FireScreen->pitch;
+						y += CleanYfac;
+
+						for (a = 0; a < FireScreen->width; a++, to += 5, from++)
+						{
+							int c;
+							for (c = CleanYfac; c; c--)
+							{
+								*(to + pitch*c) = FireRemap[*from];
+								*(to + pitch*c + 1) = FireRemap[*from];
+								*(to + pitch*c + 2) = FireRemap[*from];
+								*(to + pitch*c + 3) = FireRemap[*from];
+								*(to + pitch*c + 4) = FireRemap[*from];
 							}
 						}
 					}
@@ -1582,7 +1604,6 @@ static void M_PlayerSetupDrawer (void)
 					break;
 
 				case 4:
-				default:
 					for (b = 0; b < FireScreen->height; b++)
 					{
 						DWORD *to = (DWORD *)(screen->buffer + y * screen->pitch + x * sizeof(DWORD));
@@ -1598,6 +1619,29 @@ static void M_PlayerSetupDrawer (void)
 								*(to + pitch*c + 1) = FIRERGB(*from);
 								*(to + pitch*c + 2) = FIRERGB(*from);
 								*(to + pitch*c + 3) = FIRERGB(*from);
+							}
+						}
+					}
+					break;
+
+				case 5:
+				default:
+					for (b = 0; b < FireScreen->height; b++)
+					{
+						DWORD *to = (DWORD *)(screen->buffer + y * screen->pitch + x * sizeof(DWORD));
+						from = FireScreen->buffer + b * FireScreen->pitch;
+						y += CleanYfac;
+
+						for (a = 0; a < FireScreen->width; a++, to += 5, from++)
+						{
+							int c;
+							for (c = CleanYfac; c; c--)
+							{
+								*(to + pitch*c) = FIRERGB(*from);
+								*(to + pitch*c + 1) = FIRERGB(*from);
+								*(to + pitch*c + 2) = FIRERGB(*from);
+								*(to + pitch*c + 3) = FIRERGB(*from);
+								*(to + pitch*c + 4) = FIRERGB(*from);
 							}
 						}
 					}
@@ -1620,6 +1664,8 @@ static void M_PlayerSetupDrawer (void)
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
 	}
+
+	// Draw box surrounding fire and player:
 	screen->DrawPatchClean (W_CachePatch ("M_PBOX"),
 		320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
 
