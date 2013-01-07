@@ -184,11 +184,107 @@ void R_FillColumnHorizP (void)
 	} while (--count);
 }
 
-// Copies one span at hx to the screen at sx.
-void rt_copy1colP (int hx, int sx, int yl, int yh)
+
+
+typedef byte palindex_t;
+typedef DWORD argb_t;
+
+// rt_rawcolor does no color mapping and only uses the default palette.
+template<typename pixel_t>
+static forceinline pixel_t rt_rawcolor(const shaderef_t &pal, const byte c);
+
+// rt_mapcolor does color mapping.
+template<typename pixel_t>
+static forceinline pixel_t rt_mapcolor(const shaderef_t &pal, const byte c);
+
+// rt_tlatecolor does color mapping and translation.
+template<typename pixel_t>
+static forceinline pixel_t rt_tlatecolor(const shaderef_t &pal, const translationref_t &translation, const byte c);
+
+// rt_blend2 does alpha blending between two colors.
+template<typename pixel_t>
+static forceinline pixel_t rt_blend2(const pixel_t bg, const int bga, const pixel_t fg, const int fga);
+
+
+template<>
+static forceinline palindex_t rt_rawcolor<palindex_t>(const shaderef_t &pal, const byte c)
+{
+	// NOTE(jsd): For rawcolor we do no index.
+	return (c);
+}
+
+template<>
+static forceinline argb_t rt_rawcolor<argb_t>(const shaderef_t &pal, const byte c)
+{
+	return pal.shade(c);
+}
+
+
+template<>
+static forceinline palindex_t rt_mapcolor<palindex_t>(const shaderef_t &pal, const byte c)
+{
+	return pal.index(c);
+}
+
+template<>
+static forceinline argb_t rt_mapcolor<argb_t>(const shaderef_t &pal, const byte c)
+{
+	return pal.shade(c);
+}
+
+
+template<>
+static forceinline palindex_t rt_tlatecolor<palindex_t>(const shaderef_t &pal, const translationref_t &translation, const byte c)
+{
+	return translation.tlate(c);
+}
+
+template<>
+static forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translationref_t &translation, const byte c)
+{
+	return pal.tlate(c, translation);
+}
+
+
+template<>
+static forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
+{
+	// Crazy 8bpp alpha-blending using lookup tables and bit twiddling magic
+	argb_t bgARGB = Col2RGB8[bga >> 2][bg];
+	argb_t fgARGB = Col2RGB8[fga >> 2][fg];
+
+	argb_t mix = (fgARGB + bgARGB) | 0x1f07c1f;
+	return RGB32k[0][0][mix & (mix >> 15)];
+}
+
+template<>
+static forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, const int fga)
+{
+	return alphablend2a(bg, bga, fg, fga);
+}
+
+
+template<typename pixel_t, int columns>
+static forceinline void rt_copycols(int hx, int sx, int yl, int yh);
+
+template<typename pixel_t, int columns>
+static forceinline void rt_mapcols(int hx, int sx, int yl, int yh);
+
+template<typename pixel_t, int columns>
+static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh);
+
+template<typename pixel_t, int columns>
+static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh);
+
+template<typename pixel_t, int columns>
+static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh);
+
+
+template<typename pixel_t, int columns>
+static forceinline void rt_copycols(int hx, int sx, int yl, int yh)
 {
 	byte *source;
-	byte *dest;
+	pixel_t *dest;
 	int count;
 	int pitch;
 
@@ -197,582 +293,282 @@ void rt_copy1colP (int hx, int sx, int yl, int yh)
 		return;
 	count++;
 
-	dest = ylookup[yl] + columnofs[sx];
+	shaderef_t pal = shaderef_t(&realcolormaps, 0);
+	dest = (pixel_t *)(ylookup[yl] + columnofs[sx]);
 	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
+	pitch = dc_pitch / sizeof(pixel_t);
 
-	if (count & 1) {
-		*dest = *source;
+	if (count & 1)
+	{
+		for (int i = 0; i < columns; ++i)
+			dest[pitch*0+i] = rt_rawcolor<pixel_t>(pal, source[0+i]);
 		source += 4;
 		dest += pitch;
 	}
-	if (count & 2) {
-		dest[0] = source[0];
-		dest[pitch] = source[4];
+	if (count & 2)
+	{
+		for (int i = 0; i < columns; ++i)
+			dest[pitch*0+i] = rt_rawcolor<pixel_t>(pal, source[0+i]);
+		for (int i = 0; i < columns; ++i)
+			dest[pitch*1+i] = rt_rawcolor<pixel_t>(pal, source[4+i]);
 		source += 8;
 		dest += pitch*2;
 	}
-	if (!(count >>= 2))
+	if (!(count >>= 1))
 		return;
 
-	do {
-		dest[0] = source[0];
-		dest[pitch] = source[4];
-		dest[pitch*2] = source[8];
-		dest[pitch*3] = source[12];
-		source += 16;
-		dest += pitch*4;
+	do
+	{
+		for (int i = 0; i < columns; ++i)
+			dest[pitch*0+i] = rt_rawcolor<pixel_t>(pal, source[0+i]);
+		for (int i = 0; i < columns; ++i)
+			dest[pitch*1+i] = rt_rawcolor<pixel_t>(pal, source[4+i]);
+		source += 8;
+		dest += pitch*2;
 	} while (--count);
+}
+
+template<typename pixel_t, int columns>
+static forceinline void rt_mapcols(int hx, int sx, int yl, int yh)
+{
+	byte *source;
+	pixel_t *dest;
+	int count;
+	int pitch;
+
+	count = yh-yl;
+	if (count < 0)
+		return;
+	count++;
+
+	dest = (pixel_t *)(ylookup[yl] + columnofs[sx]);
+	source = &dc_temp[yl*4 + hx];
+	pitch = dc_pitch / sizeof(pixel_t);
+
+	if (count & 1)
+	{
+		for (int i = 0; i < columns; ++i)
+			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dc_colormap, source[0+i]);
+		source += 4;
+		dest += pitch;
+	}
+	if (!(count >>= 1))
+		return;
+
+	do
+	{
+		for (int i = 0; i < columns; ++i)
+			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dc_colormap, source[0+i]);
+		for (int i = 0; i < columns; ++i)
+			dest[pitch*1+i] = rt_mapcolor<pixel_t>(dc_colormap, source[4+i]);
+		source += 8;
+		dest += pitch*2;
+	} while (--count);
+}
+
+template<typename pixel_t, int columns>
+static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh)
+{
+	byte *source;
+	pixel_t *dest;
+	int count;
+	int pitch;
+
+	count = yh-yl;
+	if (count < 0)
+		return;
+	count++;
+
+	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
+	source = &dc_temp[yl*4 + hx];
+	pitch = dc_pitch / sizeof(pixel_t);
+
+	do
+	{
+		for (int i = 0; i < columns; ++i)
+			dest[i] = rt_tlatecolor<pixel_t>(dc_colormap, dc_translation, source[i]);
+		source += 4;
+		dest += pitch;
+	} while (--count);
+}
+
+template<typename pixel_t, int columns>
+static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
+{
+	byte  *source;
+	pixel_t *dest;
+	int count;
+	int pitch;
+
+	count = yh-yl;
+	if (count < 0)
+		return;
+	count++;
+
+	int fga, bga;
+	{
+		fixed_t fglevel, bglevel;
+
+		fglevel = dc_translevel & ~0x3ff;
+		bglevel = FRACUNIT - fglevel;
+
+		// alphas should be in [0 .. 256]
+		fga = (fglevel >> 8) * 256 / 255;
+		bga = 256 - fga;
+	}
+
+	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
+	source = &dc_temp[yl*4 + hx];
+	pitch = dc_pitch / sizeof(pixel_t);
+
+	do
+	{
+		for (int i = 0; i < columns; ++i)
+		{
+			const pixel_t fg = rt_mapcolor<pixel_t>(dc_colormap, source[i]);
+			const pixel_t bg = dest[i];
+
+			dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
+		}
+
+		source += 4;
+		dest += pitch;
+	} while (--count);
+}
+
+template<typename pixel_t, int columns>
+static forceinline void rt_tlatelucentcols(int hx, int sx, int yl, int yh)
+{
+	byte  *source;
+	pixel_t *dest;
+	int count;
+	int pitch;
+
+	count = yh-yl;
+	if (count < 0)
+		return;
+	count++;
+
+	int fga, bga;
+	{
+		fixed_t fglevel, bglevel;
+
+		fglevel = dc_translevel & ~0x3ff;
+		bglevel = FRACUNIT - fglevel;
+
+		// alphas should be in [0 .. 256]
+		fga = (fglevel >> 8) * 256 / 255;
+		bga = 256 - fga;
+	}
+
+	dest = (pixel_t *)( ylookup[yl] + columnofs[sx] );
+	source = &dc_temp[yl*4 + hx];
+	pitch = dc_pitch / sizeof(pixel_t);
+
+	do
+	{
+		for (int i = 0; i < columns; ++i)
+		{
+			const pixel_t fg = rt_tlatecolor<pixel_t>(dc_colormap, dc_translation, source[i]);
+			const pixel_t bg = dest[i];
+
+			dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
+		}
+
+		source += 4;
+		dest += pitch;
+	} while (--count);
+}
+
+
+// Copies one span at hx to the screen at sx.
+void rt_copy1colP (int hx, int sx, int yl, int yh)
+{
+	rt_copycols<byte, 1>(hx, sx, yl, yh);
 }
 
 // Copies two spans at hx and hx+1 to the screen at sx and sx+1.
 void rt_copy2colsP (int hx, int sx, int yl, int yh)
 {
-	short *source;
-	short *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = (short *)(ylookup[yl] + columnofs[sx]);
-	source = (short *)(&dc_temp[yl*4 + hx]);
-	pitch = dc_pitch/sizeof(short);
-
-	if (count & 1) {
-		*dest = *source;
-		source += 4/sizeof(short);
-		dest += pitch;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		dest[0] = source[0];
-		dest[pitch] = source[4/sizeof(short)];
-		source += 8/sizeof(short);
-		dest += pitch*2;
-	} while (--count);
+	rt_copycols<byte, 2>(hx, sx, yl, yh);
 }
 
 // Copies all four spans to the screen starting at sx.
 void rt_copy4colsP (int sx, int yl, int yh)
 {
-	int *source;
-	int *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = (int *)(ylookup[yl] + columnofs[sx]);
-	source = (int *)(&dc_temp[yl*4]);
-	pitch = dc_pitch/sizeof(int);
-	
-	if (count & 1) {
-		*dest = *source;
-		source += 4/sizeof(int);
-		dest += pitch;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		dest[0] = source[0];
-		dest[pitch] = source[4/sizeof(int)];
-		source += 8/sizeof(int);
-		dest += pitch*2;
-	} while (--count);
+	rt_copycols<byte, 4>(0, sx, yl, yh);
 }
 
 // Maps one span at hx to the screen at sx.
 void rt_map1colP (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
-
-	if (count & 1) {
-		*dest = dc_colormap.index(*source);
-		source += 4;
-		dest += pitch;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		dest[0] = dc_colormap.index(source[0]);
-		dest[pitch] = dc_colormap.index(source[4]);
-		source += 8;
-		dest += pitch*2;
-	} while (--count);
+	rt_mapcols<byte, 1>(hx, sx, yl, yh);
 }
 
 // Maps two spans at hx and hx+1 to the screen at sx and sx+1.
 void rt_map2colsP (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
-
-	if (count & 1) {
-		dest[0] = dc_colormap.index(source[0]);
-		dest[1] = dc_colormap.index(source[1]);
-		source += 4;
-		dest += pitch;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		dest[0] = dc_colormap.index(source[0]);
-		dest[1] = dc_colormap.index(source[1]);
-		dest[pitch] = dc_colormap.index(source[4]);
-		dest[pitch+1] = dc_colormap.index(source[5]);
-		source += 8;
-		dest += pitch*2;
-	} while (--count);
+	rt_mapcols<byte, 2>(hx, sx, yl, yh);
 }
 
 // Maps all four spans to the screen starting at sx.
 void rt_map4colsP (int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4];
-	pitch = dc_pitch;
-	
-	if (count & 1) {
-		dest[0] = dc_colormap.index(source[0]);
-		dest[1] = dc_colormap.index(source[1]);
-		dest[2] = dc_colormap.index(source[2]);
-		dest[3] = dc_colormap.index(source[3]);
-		source += 4;
-		dest += pitch;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		dest[0] = dc_colormap.index(source[0]);
-		dest[1] = dc_colormap.index(source[1]);
-		dest[2] = dc_colormap.index(source[2]);
-		dest[3] = dc_colormap.index(source[3]);
-		dest[pitch] = dc_colormap.index(source[4]);
-		dest[pitch+1] = dc_colormap.index(source[5]);
-		dest[pitch+2] = dc_colormap.index(source[6]);
-		dest[pitch+3] = dc_colormap.index(source[7]);
-		source += 8;
-		dest += pitch*2;
-	} while (--count);
+	rt_mapcols<byte, 4>(0, sx, yl, yh);
 }
 
 // Translates one span at hx to the screen at sx.
 void rt_tlate1colP (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
-
-	do {
-		*dest = dc_colormap.index(dc_translation.tlate(*source));
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatecols<byte, 1>(hx, sx, yl, yh);
 }
 
 // Translates two spans at hx and hx+1 to the screen at sx and sx+1.
 void rt_tlate2colsP (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
-
-	do {
-		dest[0] = dc_colormap.index(dc_translation.tlate(source[0]));
-		dest[1] = dc_colormap.index(dc_translation.tlate(source[1]));
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatecols<byte, 2>(hx, sx, yl, yh);
 }
 
 // Translates all four spans to the screen starting at sx.
 void rt_tlate4colsP (int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4];
-	pitch = dc_pitch;
-
-	do {
-		dest[0] = dc_colormap.index(dc_translation.tlate(source[0]));
-		dest[1] = dc_colormap.index(dc_translation.tlate(source[1]));
-		dest[2] = dc_colormap.index(dc_translation.tlate(source[2]));
-		dest[3] = dc_colormap.index(dc_translation.tlate(source[3]));
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatecols<byte, 4>(0, sx, yl, yh);
 }
 
 // Mixes one span at hx to the screen at sx.
 void rt_lucent1colP (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-	unsigned int *fg2rgb, *bg2rgb;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-	}
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
-
-	do {
-		unsigned int fg = dc_colormap.index(*source);
-		unsigned int bg = *dest;
-
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		*dest = RGB32k[0][0][fg & (fg>>15)];
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_lucentcols<byte, 1>(hx, sx, yl, yh);
 }
 
 // Mixes two spans at hx and hx+1 to the screen at sx and sx+1.
 void rt_lucent2colsP (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-	unsigned int *fg2rgb, *bg2rgb;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-	}
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
-
-	do {
-		unsigned int fg = dc_colormap.index(source[0]);
-		unsigned int bg = dest[0];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[0] = RGB32k[0][0][fg & (fg>>15)];
-
-		fg = dc_colormap.index(source[1]);
-		bg = dest[1];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[1] = RGB32k[0][0][fg & (fg>>15)];
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_lucentcols<byte, 2>(hx, sx, yl, yh);
 }
 
 // Mixes all four spans to the screen starting at sx.
 void rt_lucent4colsP (int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-	unsigned int *fg2rgb, *bg2rgb;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-	}
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4];
-	pitch = dc_pitch;
-
-	do {
-		unsigned int fg = dc_colormap.index(source[0]);
-		unsigned int bg = dest[0];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[0] = RGB32k[0][0][fg & (fg>>15)];
-
-		fg = dc_colormap.index(source[1]);
-		bg = dest[1];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[1] = RGB32k[0][0][fg & (fg>>15)];
-
-
-		fg = dc_colormap.index(source[2]);
-		bg = dest[2];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[2] = RGB32k[0][0][fg & (fg>>15)];
-
-		fg = dc_colormap.index(source[3]);
-		bg = dest[3];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[3] = RGB32k[0][0][fg & (fg>>15)];
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_lucentcols<byte, 4>(0, sx, yl, yh);
 }
 
 // Translates and mixes one span at hx to the screen at sx.
 void rt_tlatelucent1colP (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-	unsigned int *fg2rgb, *bg2rgb;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-	}
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
-
-	do {
-		unsigned int fg = dc_colormap.index(dc_translation.tlate(*source));
-		unsigned int bg = *dest;
-
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		*dest = RGB32k[0][0][fg & (fg>>15)];
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatelucentcols<byte, 1>(hx, sx, yl, yh);
 }
 
 // Translates and mixes two spans at hx and hx+1 to the screen at sx and sx+1.
 void rt_tlatelucent2colsP (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-	unsigned int *fg2rgb, *bg2rgb;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-	}
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch;
-
-	do {
-		unsigned int fg = dc_colormap.index(dc_translation.tlate(source[0]));
-		unsigned int bg = dest[0];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[0] = RGB32k[0][0][fg & (fg>>15)];
-
-		fg = dc_colormap.index(dc_translation.tlate(source[1]));
-		bg = dest[1];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[1] = RGB32k[0][0][fg & (fg>>15)];
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatelucentcols<byte, 2>(hx, sx, yl, yh);
 }
 
 // Translates and mixes all four spans to the screen starting at sx.
 void rt_tlatelucent4colsP (int sx, int yl, int yh)
 {
-	byte *source;
-	byte *dest;
-	int count;
-	int pitch;
-	unsigned int *fg2rgb, *bg2rgb;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT-fglevel;
-		fg2rgb = Col2RGB8[fglevel>>10];
-		bg2rgb = Col2RGB8[bglevel>>10];
-	}
-
-	dest = ylookup[yl] + columnofs[sx];
-	source = &dc_temp[yl*4];
-	pitch = dc_pitch;
-	
-	do {
-		unsigned int fg = dc_colormap.index(dc_translation.tlate(source[0]));
-		unsigned int bg = dest[0];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[0] = RGB32k[0][0][fg & (fg>>15)];
-
-		fg = dc_colormap.index(dc_translation.tlate(source[1]));
-		bg = dest[1];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[1] = RGB32k[0][0][fg & (fg>>15)];
-
-		fg = dc_colormap.index(dc_translation.tlate(source[2]));
-		bg = dest[2];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[2] = RGB32k[0][0][fg & (fg>>15)];
-
-		fg = dc_colormap.index(dc_translation.tlate(source[3]));
-		bg = dest[3];
-		fg = fg2rgb[fg];
-		bg = bg2rgb[bg];
-		fg = (fg+bg) | 0x1f07c1f;
-		dest[3] = RGB32k[0][0][fg & (fg>>15)];
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatelucentcols<byte, 4>(0, sx, yl, yh);
 }
 
 
@@ -781,582 +577,77 @@ void rt_tlatelucent4colsP (int sx, int yl, int yh)
 
 void rt_copy1colD_c (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	shaderef_t pal = shaderef_t(&realcolormaps, 0);
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	if (count & 1) {
-		*dest = pal.shade(*source);
-		source += 4;
-		dest += pitch;
-	}
-	if (count & 2) {
-		dest[0] = pal.shade(source[0]);
-		dest[pitch] = pal.shade(source[4]);
-		source += 8;
-		dest += pitch*2;
-	}
-	if (!(count >>= 2))
-		return;
-
-	do {
-		dest[0] = pal.shade(source[0]);
-		dest[pitch] = pal.shade(source[4]);
-		dest[pitch*2] = pal.shade(source[8]);
-		dest[pitch*3] = pal.shade(source[12]);
-		source += 16;
-		dest += pitch*4;
-	} while (--count);
+	rt_copycols<DWORD, 1>(hx, sx, yl, yh);
 }
 
 void rt_copy2colsD_c (int hx, int sx, int yl, int yh)
 {
-	WORD  *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	shaderef_t pal = shaderef_t(&realcolormaps, 0);
-	dest = (DWORD *)(ylookup[yl] + columnofs[sx]);
-	source = (WORD *)(&dc_temp[yl*4 + hx]);
-	pitch = dc_pitch / sizeof(DWORD);
-
-	if (count & 1) {
-		dest[0] = pal.shade(source[0] & 0xff);
-		dest[1] = pal.shade(source[0] >> 8);
-		source += 4/sizeof(WORD);
-		dest += pitch;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		WORD sc = source[0];
-		dest[0] = pal.shade(sc & 0xff);
-		dest[1] = pal.shade(sc >> 8);
-		sc = source[4/sizeof(WORD)];
-		dest[pitch+0] = pal.shade(sc & 0xff);
-		dest[pitch+1] = pal.shade(sc >> 8);
-		source += 8/sizeof(WORD);
-		dest += pitch*2;
-	} while (--count);
+	rt_copycols<DWORD, 2>(hx, sx, yl, yh);
 }
 
 void rt_copy4colsD_c (int sx, int yl, int yh)
 {
-	DWORD *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	shaderef_t pal = shaderef_t(&realcolormaps, 0);
-	dest = (DWORD *)(ylookup[yl] + columnofs[sx]);
-	source = (DWORD *)(&dc_temp[yl*4]);
-	pitch = dc_pitch/sizeof(DWORD);
-
-	if (count & 1) {
-		DWORD sc = source[0];
-		dest[0] = pal.shade((sc >> 24) & 0xff);
-		dest[1] = pal.shade((sc >> 16) & 0xff);
-		dest[2] = pal.shade((sc >>  8) & 0xff);
-		dest[3] = pal.shade((sc      ) & 0xff);
-
-		source += 4/sizeof(DWORD);
-		dest += pitch;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		DWORD sc = source[0];
-		dest[0] = pal.shade((sc >> 24) & 0xff);
-		dest[1] = pal.shade((sc >> 16) & 0xff);
-		dest[2] = pal.shade((sc >>  8) & 0xff);
-		dest[3] = pal.shade((sc      ) & 0xff);
-
-		sc = source[4/sizeof(DWORD)];
-		dest[pitch+0] = pal.shade((sc >> 24) & 0xff);
-		dest[pitch+1] = pal.shade((sc >> 16) & 0xff);
-		dest[pitch+2] = pal.shade((sc >>  8) & 0xff);
-		dest[pitch+3] = pal.shade((sc      ) & 0xff);
-
-		source += 8/sizeof(DWORD);
-		dest += pitch*2;
-	} while (--count);
+	rt_copycols<DWORD, 4>(0, sx, yl, yh);
 }
 
 void rt_map1colD_c (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	if (count & 1) {
-		*dest = dc_colormap.shade(*source);
-		dest += pitch;
-
-		source += 4;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest += pitch;
-
-		dest[0] = dc_colormap.shade(source[4]);
-		dest += pitch;
-
-		source += 8;
-	} while (--count);
+	rt_mapcols<DWORD, 1>(hx, sx, yl, yh);
 }
 
 void rt_map2colsD_c (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	if (count & 1) {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest[1] = dc_colormap.shade(source[1]);
-		dest += pitch;
-
-		source += 4;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest[1] = dc_colormap.shade(source[1]);
-		dest += pitch;
-
-		dest[0] = dc_colormap.shade(source[4]);
-		dest[1] = dc_colormap.shade(source[5]);
-		dest += pitch;
-
-		source += 8;
-	} while (--count);
+	rt_mapcols<DWORD, 2>(hx, sx, yl, yh);
 }
 
 void rt_map4colsD_c (int sx, int yl, int yh)
 {
-	byte *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = (DWORD *)(ylookup[yl] + columnofs[sx]);
-	source = &dc_temp[yl*4];
-	pitch = dc_pitch / sizeof(DWORD);
-	
-	if (count & 1) {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest[1] = dc_colormap.shade(source[1]);
-		dest[2] = dc_colormap.shade(source[2]);
-		dest[3] = dc_colormap.shade(source[3]);
-		source += 4;
-		dest += pitch;
-	}
-	if (!(count >>= 1))
-		return;
-
-	do {
-		dest[0] = dc_colormap.shade(source[0]);
-		dest[1] = dc_colormap.shade(source[1]);
-		dest[2] = dc_colormap.shade(source[2]);
-		dest[3] = dc_colormap.shade(source[3]);
-		dest += pitch;
-
-		dest[0] = dc_colormap.shade(source[4]);
-		dest[1] = dc_colormap.shade(source[5]);
-		dest[2] = dc_colormap.shade(source[6]);
-		dest[3] = dc_colormap.shade(source[7]);
-		dest += pitch;
-
-		source += 8;
-	} while (--count);
+	rt_mapcols<DWORD, 4>(0, sx, yl, yh);
 }
 
 void rt_tlate1colD_c (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		*dest = dc_colormap.tlate(*source, dc_translation);
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatecols<DWORD, 1>(hx, sx, yl, yh);
 }
 
 void rt_tlate2colsD_c (int hx, int sx, int yl, int yh)
 {
-	byte *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		dest[0] = dc_colormap.tlate(source[0], dc_translation);
-		dest[1] = dc_colormap.tlate(source[1], dc_translation);
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatecols<DWORD, 2>(hx, sx, yl, yh);
 }
 
 void rt_tlate4colsD_c (int sx, int yl, int yh)
 {
-	byte *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		dest[0] = dc_colormap.tlate(source[0], dc_translation);
-		dest[1] = dc_colormap.tlate(source[1], dc_translation);
-		dest[2] = dc_colormap.tlate(source[2], dc_translation);
-		dest[3] = dc_colormap.tlate(source[3], dc_translation);
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatecols<DWORD, 4>(0, sx, yl, yh);
 }
 
 void rt_lucent1colD_c (int hx, int sx, int yl, int yh)
 {
-	byte  *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	int fga, bga;
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT - fglevel;
-
-		// alphas should be in [0 .. 256]
-		fga = (fglevel >> 8) * 256 / 255;
-		bga = 256 - fga;
-	}
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		DWORD fg = dc_colormap.shade(*source);
-		DWORD bg = *dest;
-
-		*dest = alphablend2a(bg, bga, fg, fga);
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_lucentcols<DWORD, 1>(hx, sx, yl, yh);
 }
 
 void rt_lucent2colsD_c (int hx, int sx, int yl, int yh)
 {
-	byte  *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	int fga, bga;
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT - fglevel;
-
-		// alphas should be in [0 .. 255]
-		fga = (fglevel >> 8) * 256 / 255;
-		bga = 256 - fga;
-	}
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		DWORD fg = dc_colormap.shade(source[0]);
-		DWORD bg = dest[0];
-		dest[0] = alphablend2a(bg, bga, fg, fga);
-
-		fg = dc_colormap.shade(source[1]);
-		bg = dest[1];
-		dest[1] = alphablend2a(bg, bga, fg, fga);
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_lucentcols<DWORD, 2>(hx, sx, yl, yh);
 }
 
 void rt_lucent4colsD_c (int sx, int yl, int yh)
 {
-	byte  *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	int fga, bga;
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT - fglevel;
-
-		// alphas should be in [0 .. 255]
-		fga = (fglevel >> 8) * 256 / 255;
-		bga = 256 - fga;
-	}
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		DWORD fg = dc_colormap.shade(source[0]);
-		DWORD bg = dest[0];
-		dest[0] = alphablend2a(bg, bga, fg, fga);
-
-		fg = dc_colormap.shade(source[1]);
-		bg = dest[1];
-		dest[1] = alphablend2a(bg, bga, fg, fga);
-
-		fg = dc_colormap.shade(source[2]);
-		bg = dest[2];
-		dest[2] = alphablend2a(bg, bga, fg, fga);
-
-		fg = dc_colormap.shade(source[3]);
-		bg = dest[3];
-		dest[3] = alphablend2a(bg, bga, fg, fga);
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_lucentcols<DWORD, 4>(0, sx, yl, yh);
 }
 
 void rt_tlatelucent1colD_c (int hx, int sx, int yl, int yh)
 {
-	byte  *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	int fga, bga;
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT - fglevel;
-
-		// alphas should be in [0 .. 256]
-		fga = (fglevel >> 8) * 256 / 255;
-		bga = 256 - fga;
-	}
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		DWORD fg = dc_colormap.tlate(*source, dc_translation);
-		DWORD bg = *dest;
-
-		*dest = alphablend2a(bg, bga, fg, fga);
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatelucentcols<DWORD, 1>(hx, sx, yl, yh);
 }
 
 void rt_tlatelucent2colsD_c (int hx, int sx, int yl, int yh)
 {
-	byte  *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	int fga, bga;
-	{
-		fixed_t fglevel, bglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-		bglevel = FRACUNIT - fglevel;
-
-		// alphas should be in [0 .. 255]
-		fga = (fglevel >> 8) * 256 / 255;
-		bga = 256 - fga;
-	}
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4 + hx];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		DWORD fg = dc_colormap.tlate(source[0], dc_translation);
-		DWORD bg = dest[0];
-		dest[0] = alphablend2a(bg, bga, fg, fga);
-
-		fg = dc_colormap.tlate(source[1], dc_translation);
-		bg = dest[1];
-		dest[1] = alphablend2a(bg, bga, fg, fga);
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatelucentcols<DWORD, 2>(hx, sx, yl, yh);
 }
 
 void rt_tlatelucent4colsD_c (int sx, int yl, int yh)
 {
-	byte  *source;
-	DWORD *dest;
-	int count;
-	int pitch;
-
-	count = yh-yl;
-	if (count < 0)
-		return;
-	count++;
-
-	int fga, bga;
-	{
-		fixed_t fglevel;
-
-		fglevel = dc_translevel & ~0x3ff;
-
-		// alphas should be in [0 .. 255]
-		fga = (fglevel >> 8) * 256 / 255;
-		bga = 256 - fga;
-	}
-
-	dest = (DWORD *)( ylookup[yl] + columnofs[sx] );
-	source = &dc_temp[yl*4];
-	pitch = dc_pitch / sizeof(DWORD);
-
-	do {
-		DWORD fg = dc_colormap.tlate(source[0], dc_translation);
-		DWORD bg = dest[0];
-		dest[0] = alphablend2a(bg, bga, fg, fga);
-
-		fg = dc_colormap.tlate(source[1], dc_translation);
-		bg = dest[1];
-		dest[1] = alphablend2a(bg, bga, fg, fga);
-
-		fg = dc_colormap.tlate(source[2], dc_translation);
-		bg = dest[2];
-		dest[2] = alphablend2a(bg, bga, fg, fga);
-
-		fg = dc_colormap.tlate(source[3], dc_translation);
-		bg = dest[3];
-		dest[3] = alphablend2a(bg, bga, fg, fga);
-
-		source += 4;
-		dest += pitch;
-	} while (--count);
+	rt_tlatelucentcols<DWORD, 4>(0, sx, yl, yh);
 }
 
 

@@ -52,46 +52,6 @@
 // SSE2 alpha-blending functions.
 // NOTE(jsd): We can only blend two colors per 128-bit register because we need 16-bit resolution for multiplication.
 
-#if 0
-// Blend 4 colors against 4 other colors using SSE2 intrinsics.
-// NOTE(jsd): This function produces darker colors somehow; it is disabled for now.
-#define blend4vs4_sse2(dcba,hgfe,alpha,invAlpha,upper8mask) \
-	(_mm_packus_epi16( \
-		_mm_add_epi16( \
-			_mm_srli_epi16( \
-				_mm_mullo_epi16( \
-					_mm_and_si128(_mm_unpacklo_epi8(dcba, dcba), upper8mask), \
-					invAlpha \
-				), \
-				8 \
-			), \
-			_mm_srli_epi16( \
-				_mm_mullo_epi16( \
-					_mm_and_si128(_mm_unpacklo_epi8(hgfe, hgfe), upper8mask), \
-					alpha \
-				), \
-				8 \
-			) \
-		), \
-		_mm_add_epi16( \
-			_mm_srli_epi16( \
-				_mm_mullo_epi16( \
-					_mm_and_si128(_mm_unpackhi_epi8(dcba, dcba), upper8mask), \
-					invAlpha \
-				), \
-				8 \
-			), \
-			_mm_srli_epi16( \
-				_mm_mullo_epi16( \
-					_mm_and_si128(_mm_unpackhi_epi8(hgfe, hgfe), upper8mask), \
-					alpha \
-				), \
-				8 \
-			) \
-		) \
-	))
-#endif
-
 // Blend 4 colors against 1 color using SSE2:
 #define blend4vs1_sse2(input,blendMult,blendInvAlpha,upper8mask) \
 	(_mm_packus_epi16( \
