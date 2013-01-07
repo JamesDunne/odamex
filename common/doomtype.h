@@ -183,6 +183,11 @@ extern std::ifstream CON;
 #define	PRINT_CHAT			3		// chat messages
 #define PRINT_TEAMCHAT		4		// chat messages from a teammate
 
+#ifndef __forceinline
+#define forceinline __forceinline
+#else
+#define __forceinline inline
+#endif
 
 //==========================================================================
 //
@@ -195,8 +200,7 @@ extern std::ifstream CON;
 #undef MIN
 #endif
 template<class T>
-inline
-const T MIN (const T a, const T b)
+forceinline const T MIN (const T a, const T b)
 {
 	return a < b ? a : b;
 }
@@ -212,8 +216,7 @@ const T MIN (const T a, const T b)
 #undef MAX
 #endif
 template<class T>
-inline
-const T MAX (const T a, const T b)
+forceinline const T MAX (const T a, const T b)
 {
 	return a > b ? a : b;
 }
@@ -231,8 +234,7 @@ const T MAX (const T a, const T b)
 #undef clamp
 #endif
 template<class T>
-inline
-T clamp (const T in, const T min, const T max)
+forceinline T clamp (const T in, const T min, const T max)
 {
 	return in <= min ? min : in >= max ? max : in;
 }
@@ -249,7 +251,7 @@ T clamp (const T in, const T min, const T max)
 
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 256
-inline DWORD alphablend1a(const DWORD from, const DWORD to, const int toa)
+forceinline DWORD alphablend1a(const DWORD from, const DWORD to, const int toa)
 {
 	const byte fr = RPART(from);
 	const byte fg = GPART(from);
@@ -269,7 +271,7 @@ inline DWORD alphablend1a(const DWORD from, const DWORD to, const int toa)
 // Alpha blend between two RGB colors with two alpha values
 // 0 <= froma <= 256
 // 0 <=   toa <= 256
-inline DWORD alphablend2a(const DWORD from, const int froma, const DWORD to, const int toa)
+forceinline DWORD alphablend2a(const DWORD from, const int froma, const DWORD to, const int toa)
 {
 	const byte fr = (byte)((RPART(from) * froma) / 256);
 	const byte fg = (byte)((GPART(from) * froma) / 256);
@@ -306,7 +308,7 @@ public:
 	operator bool() const;
 };
 
-inline const byte translationref_t::tlate(const byte c) const
+forceinline const byte translationref_t::tlate(const byte c) const
 {
 #if DEBUG
 	if (m_table == NULL) throw CFatalError("translationref_t::tlate() called with NULL m_table");
@@ -314,17 +316,17 @@ inline const byte translationref_t::tlate(const byte c) const
 	return m_table[c];
 }
 
-inline const int translationref_t::getPlayerID() const
+forceinline const int translationref_t::getPlayerID() const
 {
 	return m_player_id;
 }
 
-inline const byte *translationref_t::getTable() const
+forceinline const byte *translationref_t::getTable() const
 {
 	return m_table;
 }
 
-inline translationref_t::operator bool() const
+forceinline translationref_t::operator bool() const
 {
 	return m_table != NULL;
 }
@@ -370,18 +372,18 @@ public:
 	bool operator==(const shaderef_t &other) const;
 };
 
-inline bool shaderef_t::isValid() const
+forceinline bool shaderef_t::isValid() const
 {
 	return m_colors != NULL;
 }
 
-inline shaderef_t shaderef_t::with(const int mapnum) const
+forceinline shaderef_t shaderef_t::with(const int mapnum) const
 {
 	return shaderef_t(m_colors, m_mapnum + mapnum);
 }
 
 
-inline byte shaderef_t::index(const byte c) const
+forceinline byte shaderef_t::index(const byte c) const
 {
 #if DEBUG
 	if (m_colors == NULL) throw CFatalError("shaderef_t::index(): Bad shaderef_t");
@@ -391,7 +393,7 @@ inline byte shaderef_t::index(const byte c) const
 	return m_colormap[c];
 }
 
-inline DWORD shaderef_t::shade(const byte c) const
+forceinline DWORD shaderef_t::shade(const byte c) const
 {
 #if DEBUG
 	if (m_colors == NULL) throw CFatalError("shaderef_t::shade(): Bad shaderef_t");
@@ -401,17 +403,17 @@ inline DWORD shaderef_t::shade(const byte c) const
 	return m_shademap[c];
 }
 
-inline const shademap_t *shaderef_t::map() const
+forceinline const shademap_t *shaderef_t::map() const
 {
 	return m_colors;
 }
 
-inline const int shaderef_t::mapnum() const
+forceinline const int shaderef_t::mapnum() const
 {
 	return m_mapnum;
 }
 
-inline bool shaderef_t::operator==(const shaderef_t &other) const
+forceinline bool shaderef_t::operator==(const shaderef_t &other) const
 {
 	return m_colors == other.m_colors && m_mapnum == other.m_mapnum;
 }

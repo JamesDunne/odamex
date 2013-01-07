@@ -1317,22 +1317,22 @@ static void M_PlayerSetupTicker (void)
 }
 
 template<typename pixel_t>
-static inline pixel_t R_FirePixel(const byte c);
+static forceinline pixel_t R_FirePixel(const byte c);
 
 template<>
-static inline byte R_FirePixel<byte>(const byte c)
+static forceinline byte R_FirePixel<byte>(const byte c)
 {
 	return FireRemap[c];
 }
 
 template<>
-static inline DWORD R_FirePixel<DWORD>(const byte c)
+static forceinline DWORD R_FirePixel<DWORD>(const byte c)
 {
 	return MAKERGB(c, 0, 0);
 }
 
 template<int xscale, typename pixel_t>
-static inline void R_RenderFire(int x, int y)
+static forceinline void R_RenderFire(int x, int y)
 {
 	int pitch = screen->pitch / sizeof(pixel_t);
 
