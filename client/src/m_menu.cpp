@@ -1316,6 +1316,46 @@ static void M_PlayerSetupTicker (void)
 	PlayerTics = PlayerState->tics;
 }
 
+template<typename pixel_t>
+static inline pixel_t R_FirePixel(const byte c);
+
+template<>
+static inline byte R_FirePixel<byte>(const byte c)
+{
+	return FireRemap[c];
+}
+
+template<>
+static inline DWORD R_FirePixel<DWORD>(const byte c)
+{
+	return MAKERGB(c, 0, 0);
+}
+
+template<int xscale, typename pixel_t>
+static inline void R_RenderFire(int x, int y)
+{
+	int pitch = screen->pitch / sizeof(pixel_t);
+
+	for (int b = 0; b < FireScreen->height; b++)
+	{
+		pixel_t *to = (pixel_t *)(screen->buffer + y * screen->pitch + x * sizeof(pixel_t));
+		byte *from = FireScreen->buffer + b * FireScreen->pitch;
+		y += CleanYfac;
+
+		for (int a = 0; a < FireScreen->width; a++, to += xscale, from++)
+		{
+			int c;
+			for (c = CleanYfac; c; c--)
+			{
+				for (int i = 0; i < xscale; ++i)
+				{
+					*(to + pitch*c + i) = R_FirePixel<pixel_t>(*from);
+				}
+			}
+		}
+	}
+}
+
 static void M_PlayerSetupDrawer (void)
 {
 	int x1,x2,y1,y2;
@@ -1435,218 +1475,21 @@ static void M_PlayerSetupDrawer (void)
 			y--;
 			if (screen->is8bit())
 			{
-				pitch = screen->pitch;
-				switch (CleanXfac)
-				{
-				case 1:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						byte *to = screen->buffer + y * screen->pitch + x;
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to++, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-								*(to + pitch*c) = FireRemap[*from];
-						}
-					}
-					break;
-
-				case 2:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						byte *to = screen->buffer + y * screen->pitch + x;
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 2, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-							{
-								*(to + pitch*c) = FireRemap[*from];
-								*(to + pitch*c + 1) = FireRemap[*from];
-							}
-						}
-					}
-					break;
-
-				case 3:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						byte *to = screen->buffer + y * screen->pitch + x;
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 3, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-							{
-								*(to + pitch*c) = FireRemap[*from];
-								*(to + pitch*c + 1) = FireRemap[*from];
-								*(to + pitch*c + 2) = FireRemap[*from];
-							}
-						}
-					}
-					break;
-
-				case 4:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						byte *to = screen->buffer + y * screen->pitch + x;
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 4, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-							{
-								*(to + pitch*c) = FireRemap[*from];
-								*(to + pitch*c + 1) = FireRemap[*from];
-								*(to + pitch*c + 2) = FireRemap[*from];
-								*(to + pitch*c + 3) = FireRemap[*from];
-							}
-						}
-					}
-					break;
-
-				case 5:
-				default:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						byte *to = screen->buffer + y * screen->pitch + x;
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 5, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-							{
-								*(to + pitch*c) = FireRemap[*from];
-								*(to + pitch*c + 1) = FireRemap[*from];
-								*(to + pitch*c + 2) = FireRemap[*from];
-								*(to + pitch*c + 3) = FireRemap[*from];
-								*(to + pitch*c + 4) = FireRemap[*from];
-							}
-						}
-					}
-					break;
-				}
+				// 8bpp rendering:
+				     if (CleanXfac == 1) R_RenderFire<1, byte>(x, y);
+				else if (CleanXfac == 2) R_RenderFire<2, byte>(x, y);
+				else if (CleanXfac == 3) R_RenderFire<3, byte>(x, y);
+				else if (CleanXfac == 4) R_RenderFire<4, byte>(x, y);
+				else if (CleanXfac == 5) R_RenderFire<5, byte>(x, y);
 			}
 			else
 			{
 				// 32bpp rendering:
-
-				// NOTE(jsd): FireRemap is just a BestColor 8bpp lookup for shades of red.
-#define FIRERGB(i) MAKERGB(i, 0, 0)
-
-				pitch = screen->pitch / sizeof(DWORD);
-				switch (CleanXfac)
-				{
-				case 1:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						DWORD *to = (DWORD *)(screen->buffer + y * screen->pitch + x * sizeof(DWORD));
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to++, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-								*(to + pitch*c) = FIRERGB(*from);
-						}
-					}
-					break;
-
-				case 2:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						DWORD *to = (DWORD *)(screen->buffer + y * screen->pitch + x * sizeof(DWORD));
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 2, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-							{
-								*(to + pitch*c) = FIRERGB(*from);
-								*(to + pitch*c + 1) = FIRERGB(*from);
-							}
-						}
-					}
-					break;
-
-				case 3:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						DWORD *to = (DWORD *)(screen->buffer + y * screen->pitch + x * sizeof(DWORD));
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 3, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-							{
-								*(to + pitch*c) = FIRERGB(*from);
-								*(to + pitch*c + 1) = FIRERGB(*from);
-								*(to + pitch*c + 2) = FIRERGB(*from);
-							}
-						}
-					}
-					break;
-
-				case 4:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						DWORD *to = (DWORD *)(screen->buffer + y * screen->pitch + x * sizeof(DWORD));
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 4, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-							{
-								*(to + pitch*c) = FIRERGB(*from);
-								*(to + pitch*c + 1) = FIRERGB(*from);
-								*(to + pitch*c + 2) = FIRERGB(*from);
-								*(to + pitch*c + 3) = FIRERGB(*from);
-							}
-						}
-					}
-					break;
-
-				case 5:
-				default:
-					for (b = 0; b < FireScreen->height; b++)
-					{
-						DWORD *to = (DWORD *)(screen->buffer + y * screen->pitch + x * sizeof(DWORD));
-						from = FireScreen->buffer + b * FireScreen->pitch;
-						y += CleanYfac;
-
-						for (a = 0; a < FireScreen->width; a++, to += 5, from++)
-						{
-							int c;
-							for (c = CleanYfac; c; c--)
-							{
-								*(to + pitch*c) = FIRERGB(*from);
-								*(to + pitch*c + 1) = FIRERGB(*from);
-								*(to + pitch*c + 2) = FIRERGB(*from);
-								*(to + pitch*c + 3) = FIRERGB(*from);
-								*(to + pitch*c + 4) = FIRERGB(*from);
-							}
-						}
-					}
-					break;
-				}
+				     if (CleanXfac == 1) R_RenderFire<1, DWORD>(x, y);
+				else if (CleanXfac == 2) R_RenderFire<2, DWORD>(x, y);
+				else if (CleanXfac == 3) R_RenderFire<3, DWORD>(x, y);
+				else if (CleanXfac == 4) R_RenderFire<4, DWORD>(x, y);
+				else if (CleanXfac == 5) R_RenderFire<5, DWORD>(x, y);
 			}
 			FireScreen->Unlock ();
 		}
