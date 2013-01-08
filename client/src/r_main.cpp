@@ -1053,12 +1053,10 @@ void R_SetupFrame (player_t *player)
 		newblend = viewz < P_FloorHeight(viewx, viewy, s) ? s->bottommap : 
 					viewz > P_CeilingHeight(viewx, viewy, s) ? s->topmap : s->midmap;
 
-#if 0
 		if (!screen->is8bit())
 			newblend = R_BlendForColormap (newblend);
 		else if (APART(newblend) == 0 && newblend >= numfakecmaps)
 			newblend = 0;
-#endif
 	}
 	else
 	{

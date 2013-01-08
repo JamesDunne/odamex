@@ -835,6 +835,7 @@ void R_InitColormaps (void)
 		int i;
 		size_t j;
 		palette_t *pal = GetDefaultPalette ();
+		shaderef_t defpal = shaderef_t(&pal->maps, 0);
 
 		for (i = ++firstfakecmap, j = 1; j < numfakecmaps; i++, j++)
 		{
@@ -862,29 +863,23 @@ void R_InitColormaps (void)
 						b = (b + BPART(pal->basecolors[map[k]])) >> 1;
 					}
 					// NOTE(jsd): This alpha value is used for 32bpp in water areas.
-					fakecmaps[j].blend = MAKEARGB (128, r, g, b);
+					fakecmaps[j].blend = MAKEARGB (64, r, g, b);
 
-#if 0
 					// Set up shademap for the colormap:
 					for (k = 0; k < 256; ++k)
 					{
-						DWORD c = pal->colors[*map];
-						shademap[k] = alphablend1a(c, fakecmaps[j].blend, j * (255 / numfakecmaps));
+						DWORD c = pal->basecolors[map[0]];
+						shademap[k] = alphablend1a(c, MAKERGB(r,g,b), j * (256 / numfakecmaps));
 					}
-#endif
 				}
-#if 0
 				else
 				{
-#endif
 					// Set up shademap for the colormap:
 					for (k = 0; k < 256; ++k)
 					{
-						shademap[k] = V_Palette.shade(colormap[k]);
+						shademap[k] = defpal.shade(colormap[k]);
 					}
-#if 0
 				}
-#endif
 			}
 		}
 	}
