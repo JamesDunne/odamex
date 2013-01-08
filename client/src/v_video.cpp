@@ -68,8 +68,8 @@ IMPLEMENT_CLASS (DCanvas, DObject)
 int DisplayWidth, DisplayHeight, DisplayBits;
 int SquareWidth;
 
-unsigned int Col2RGB8[65][256];
-byte RGB32k[32][32][32];
+argb_t Col2RGB8[65][256];
+palindex_t RGB32k[32][32][32];
 
 void I_FlushInput();
 
@@ -267,10 +267,9 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color, float famount
 		int x, y;
 
 		fixed_t amount = (fixed_t)(famount * 64.0f);
-		unsigned int *fg2rgb = Col2RGB8[amount];
-		unsigned int *bg2rgb = Col2RGB8[64-amount];
-		unsigned int fg = 
-				fg2rgb[V_GetColorFromString(DefaultPalette->basecolors, color)];
+		argb_t *fg2rgb = Col2RGB8[amount];
+		argb_t *bg2rgb = Col2RGB8[64-amount];
+		unsigned int fg = fg2rgb[V_GetColorFromString(DefaultPalette->basecolors, color)];
 		
 		byte *dest = buffer + y1 * pitch + x1;
 		int gap = pitch - w;
@@ -400,7 +399,7 @@ BEGIN_COMMAND (setcolor)
 END_COMMAND (setcolor)
 
 // Build the tables necessary for translucency
-static void BuildTransTable (DWORD *palette)
+static void BuildTransTable (argb_t *palette)
 {
 	{
 		int r, g, b;

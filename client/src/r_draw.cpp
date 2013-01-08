@@ -507,7 +507,7 @@ void R_DrawTranslucentColumnP (void)
 	byte *dest;
 	fixed_t frac;
 	fixed_t fracstep;
-	unsigned int *fg2rgb, *bg2rgb;
+	argb_t *fg2rgb, *bg2rgb;
 
 	count = dc_yh - dc_yl;
 	if (count < 0)
@@ -524,13 +524,19 @@ void R_DrawTranslucentColumnP (void)
 	}
 #endif 
 
+	int bga, fga;
 	{
 		fixed_t fglevel, bglevel;
 
 		fglevel = dc_translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
+#if 1
+		fga = fglevel >> 8;
+		bga = bglevel >> 8;
+#else
 		fg2rgb = Col2RGB8[fglevel>>10];
 		bg2rgb = Col2RGB8[bglevel>>10];
+#endif
 	}
 
 	dest = ylookup[dc_yl] + columnofs[dc_x];
@@ -557,13 +563,18 @@ void R_DrawTranslucentColumnP (void)
 
 			do
 			{
-				unsigned int fg = dc_colormap.index(source[(frac>>FRACBITS)]);
-				unsigned int bg = *dest;
-				
+				palindex_t fg = dc_colormap.index(source[(frac>>FRACBITS)]);
+				palindex_t bg = *dest;
+
+#if 1
+				*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
+#else
 				fg = fg2rgb[fg];
 				bg = bg2rgb[bg];
 				fg = (fg+bg) | 0x1f07c1f;
 				*dest = RGB32k[0][0][fg & (fg>>15)];
+#endif
+
 				dest += pitch;
 				if ((frac += fracstep) >= texheight)
 					frac -= texheight;
@@ -574,13 +585,18 @@ void R_DrawTranslucentColumnP (void)
 			// texture height is a power-of-2
 			do
 			{
-				unsigned int fg = dc_colormap.index(source[(frac>>FRACBITS)&mask]);
-				unsigned int bg = *dest;
+				palindex_t fg = dc_colormap.index(source[(frac>>FRACBITS)&mask]);
+				palindex_t bg = *dest;
 
+#if 1
+				*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
+#else
 				fg = fg2rgb[fg];
 				bg = bg2rgb[bg];
 				fg = (fg+bg) | 0x1f07c1f;
 				*dest = RGB32k[0][0][fg & (fg>>15)];
+#endif
+
 				dest += pitch;
 				frac += fracstep;
 			} while (--count);
@@ -650,7 +666,7 @@ void R_DrawTranslatedColumnP (void)
 			{
 				*dest = dc_colormap.index(dc_translation.tlate(source[(frac>>FRACBITS)]));
 				dest += pitch;
-				
+
 				if ((frac += fracstep) >= texheight)
 					frac -= texheight;
 			} while(--count);
@@ -676,7 +692,7 @@ void R_DrawTlatedLucentColumnP (void)
 	byte *dest;
 	fixed_t frac;
 	fixed_t fracstep;
-	unsigned int *fg2rgb, *bg2rgb;
+	argb_t *fg2rgb, *bg2rgb;
 
 	count = dc_yh - dc_yl;
 	if (count < 0)

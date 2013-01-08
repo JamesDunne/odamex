@@ -153,6 +153,11 @@ typedef signed __int64		SQWORD;
 
 typedef DWORD				BITFIELD;
 
+// 8bpp palette index
+typedef byte                palindex_t;
+// 32bpp ARGB color (A is usually 0)
+typedef DWORD               argb_t;
+
 #ifdef _WIN32
 #define PATHSEP "\\"
 #define PATHSEPCHAR '\\'
@@ -251,7 +256,7 @@ forceinline T clamp (const T in, const T min, const T max)
 
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 256
-forceinline DWORD alphablend1a(const DWORD from, const DWORD to, const int toa)
+forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int toa)
 {
 	const byte fr = RPART(from);
 	const byte fg = GPART(from);
@@ -271,7 +276,7 @@ forceinline DWORD alphablend1a(const DWORD from, const DWORD to, const int toa)
 // Alpha blend between two RGB colors with two alpha values
 // 0 <= froma <= 256
 // 0 <=   toa <= 256
-forceinline DWORD alphablend2a(const DWORD from, const int froma, const DWORD to, const int toa)
+forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa)
 {
 	const byte fr = (byte)((RPART(from) * froma) / 256);
 	const byte fg = (byte)((GPART(from) * froma) / 256);
@@ -292,23 +297,23 @@ forceinline DWORD alphablend2a(const DWORD from, const int froma, const DWORD to
 
 class translationref_t
 {
-	const byte *m_table;
-	int         m_player_id;
+	const palindex_t *m_table;
+	int               m_player_id;
 
 public:
 	translationref_t();
 	translationref_t(const translationref_t &other);
-	translationref_t(const byte *table);
-	translationref_t(const byte *table, const int player_id);
+	translationref_t(const palindex_t *table);
+	translationref_t(const palindex_t *table, const int player_id);
 
-	const byte tlate(const byte c) const;
+	const palindex_t tlate(const byte c) const;
 	const int getPlayerID() const;
-	const byte *getTable() const;
+	const palindex_t *getTable() const;
 
 	operator bool() const;
 };
 
-forceinline const byte translationref_t::tlate(const byte c) const
+forceinline const palindex_t translationref_t::tlate(const byte c) const
 {
 #if DEBUG
 	if (m_table == NULL) throw CFatalError("translationref_t::tlate() called with NULL m_table");
@@ -333,11 +338,11 @@ forceinline translationref_t::operator bool() const
 
 
 typedef struct {
-	byte    *colormap;          // Colormap for 8-bit
-	DWORD   *shademap;          // ARGB8888 values for 32-bit
-	byte     ramp[256];         // Light fall-off as a function of distance
-	                            // Light levels: 0 = black, 255 = full bright.
-	                            // Distance:     0 = near,  255 = far.
+	palindex_t  *colormap;  // Colormap for 8-bit
+	argb_t      *shademap;  // ARGB8888 values for 32-bit
+	byte        ramp[256];  // Light fall-off as a function of distance
+	                        // Light levels: 0 = black, 255 = full bright.
+	                        // Distance:     0 = near,  255 = far.
 } shademap_t;
 
 
@@ -348,8 +353,8 @@ private:
 	int               m_mapnum;     // Which index into the color/shade map to use
 
 public:
-	mutable const byte		 *m_colormap;   // Computed colormap pointer
-	mutable const DWORD		 *m_shademap;   // Computed shademap pointer
+	mutable const palindex_t *m_colormap;   // Computed colormap pointer
+	mutable const argb_t     *m_shademap;   // Computed shademap pointer
 
 public:
 	shaderef_t();
@@ -361,13 +366,13 @@ public:
 
 	shaderef_t with(const int mapnum) const;
 
-	byte  index(const byte c) const;
-	DWORD shade(const byte c) const;
+	palindex_t  index(const byte c) const;
+	argb_t      shade(const byte c) const;
 	const shademap_t *map() const;
 	const int mapnum() const;
 	const byte ramp() const;
 
-	DWORD tlate(const translationref_t &translation, const byte c) const;
+	argb_t tlate(const translationref_t &translation, const byte c) const;
 
 	bool operator==(const shaderef_t &other) const;
 };
@@ -383,7 +388,7 @@ forceinline shaderef_t shaderef_t::with(const int mapnum) const
 }
 
 
-forceinline byte shaderef_t::index(const byte c) const
+forceinline palindex_t shaderef_t::index(const palindex_t c) const
 {
 #if DEBUG
 	if (m_colors == NULL) throw CFatalError("shaderef_t::index(): Bad shaderef_t");
@@ -393,7 +398,7 @@ forceinline byte shaderef_t::index(const byte c) const
 	return m_colormap[c];
 }
 
-forceinline DWORD shaderef_t::shade(const byte c) const
+forceinline argb_t shaderef_t::shade(const palindex_t c) const
 {
 #if DEBUG
 	if (m_colors == NULL) throw CFatalError("shaderef_t::shade(): Bad shaderef_t");
@@ -420,5 +425,61 @@ forceinline bool shaderef_t::operator==(const shaderef_t &other) const
 
 // NOTE(jsd): Rest of shaderef_t and translationref_t functions implemented in "r_main.h"
 // NOTE(jsd): Constructors are implemented in "v_palette.cpp"
+
+// rt_rawcolor does no color mapping and only uses the default palette.
+template<typename pixel_t>
+static forceinline pixel_t rt_rawcolor(const shaderef_t &pal, const byte c);
+
+// rt_mapcolor does color mapping.
+template<typename pixel_t>
+static forceinline pixel_t rt_mapcolor(const shaderef_t &pal, const byte c);
+
+// rt_tlatecolor does color mapping and translation.
+template<typename pixel_t>
+static forceinline pixel_t rt_tlatecolor(const shaderef_t &pal, const translationref_t &translation, const byte c);
+
+// rt_blend2 does alpha blending between two colors.
+template<typename pixel_t>
+static forceinline pixel_t rt_blend2(const pixel_t bg, const int bga, const pixel_t fg, const int fga);
+
+
+template<>
+static forceinline palindex_t rt_rawcolor<palindex_t>(const shaderef_t &pal, const byte c)
+{
+	// NOTE(jsd): For rawcolor we do no index.
+	return (c);
+}
+
+template<>
+static forceinline argb_t rt_rawcolor<argb_t>(const shaderef_t &pal, const byte c)
+{
+	return pal.shade(c);
+}
+
+
+template<>
+static forceinline palindex_t rt_mapcolor<palindex_t>(const shaderef_t &pal, const byte c)
+{
+	return pal.index(c);
+}
+
+template<>
+static forceinline argb_t rt_mapcolor<argb_t>(const shaderef_t &pal, const byte c)
+{
+	return pal.shade(c);
+}
+
+
+template<>
+static forceinline palindex_t rt_tlatecolor<palindex_t>(const shaderef_t &pal, const translationref_t &translation, const byte c)
+{
+	return translation.tlate(c);
+}
+
+template<>
+static forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translationref_t &translation, const byte c)
+{
+	return pal.tlate(translation, c);
+}
 
 #endif

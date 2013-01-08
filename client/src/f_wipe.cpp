@@ -459,12 +459,16 @@ int wipeP_doBurn (int ticks)
 				else
 				{
 					int bglevel = 64-fglevel;
-					unsigned int *fg2rgb = Col2RGB8[fglevel];
-					unsigned int *bg2rgb = Col2RGB8[bglevel];
-					unsigned int fg = fg2rgb[fromnew[x]];
-					unsigned int bg = bg2rgb[fromold[x]];
+#if 1
+					to[x] = rt_blend2<palindex_t>(fromold[x], bglevel << 2, fromnew[x], fglevel << 2);
+#else
+					argb_t *fg2rgb = Col2RGB8[fglevel];
+					argb_t *bg2rgb = Col2RGB8[bglevel];
+					argb_t fg = fg2rgb[fromnew[x]];
+					argb_t bg = bg2rgb[fromold[x]];
 					fg = (fg+bg) | 0x1f07c1f;
 					to[x] = RGB32k[0][0][fg & (fg>>15)];
+#endif
 					done = false;
 				}
 			}
@@ -688,8 +692,10 @@ int wipeP_doFade (int ticks)
 	{
 		int x, y;
 		fixed_t bglevel = 64 - fade;
+#if 0
 		unsigned int *fg2rgb = Col2RGB8[fade];
 		unsigned int *bg2rgb = Col2RGB8[bglevel];
+#endif
 		byte *fromnew = (byte *)wipeP_scr_end;
 		byte *fromold = (byte *)wipeP_scr_start;
 		byte *to = screen->buffer;
@@ -698,10 +704,14 @@ int wipeP_doFade (int ticks)
 		{
 			for (x = 0; x < screen->width; x++)
 			{
+#if 1
+				to[x] = rt_blend2<palindex_t>(fromold[x], bglevel << 2, fromnew[x], fade << 2);
+#else
 				unsigned int fg = fg2rgb[fromnew[x]];
 				unsigned int bg = bg2rgb[fromold[x]];
 				fg = (fg+bg) | 0x1f07c1f;
 				to[x] = RGB32k[0][0][fg & (fg>>15)];
+#endif
 			}
 			fromnew += screen->width;
 			fromold += screen->width;

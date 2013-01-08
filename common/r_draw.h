@@ -153,15 +153,26 @@ void rt_draw4cols (int sx);
 void rt_initcols (void);
 
 // Vectorizable functions:
+
+template<typename pixel_t>
+void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga);
 void r_dimpatchD_c(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 
 #ifdef __SSE2__
+template<typename pixel_t>
+void rtv_lucent4cols_SSE2(byte *source, pixel_t *dest, int bga, int fga);
 void r_dimpatchD_SSE2(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 #endif
+
 #ifdef __MMX__
+template<typename pixel_t>
+void rtv_lucent4cols_MMX(byte *source, pixel_t *dest, int bga, int fga);
 void r_dimpatchD_MMX(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 #endif
+
 #ifdef __ALTIVEC__
+template<typename pixel_t>
+void rtv_lucent4cols_ALTIVEC(byte *source, pixel_t *dest, int bga, int fga);
 void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 #endif
 
@@ -183,7 +194,9 @@ extern void (*rt_tlatelucent2cols) (int hx, int sx, int yl, int yh);
 extern void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
 // Vectorizable function pointers:
-extern void (*r_dimpatchD)(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+extern void (*rtv_lucent4colsP)(byte *source, palindex_t *dest, int bga, int fga);
+extern void (*rtv_lucent4colsD)(byte *source, argb_t *dest, int bga, int fga);
+extern void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 extern "C" int				ds_colsize;		// [RH] Distance between columns
 
@@ -214,7 +227,7 @@ extern "C" shaderef_t		slopelighting[MAXWIDTH];
 
 extern byte*            translationtables;
 extern translationref_t dc_translation;
-extern DWORD            translationRGB[MAXPLAYERS+1][16];
+extern argb_t           translationRGB[MAXPLAYERS+1][16];
 
 extern fixed_t dc_translevel;
 

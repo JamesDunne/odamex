@@ -40,7 +40,6 @@
 
 // Palettized functions:
 
-
 byte dc_temp[MAXHEIGHT * 4]; // denis - todo - security, overflow
 unsigned int dc_tspans[4][256];
 unsigned int *dc_ctspan[4];
@@ -186,83 +185,6 @@ void R_FillColumnHorizP (void)
 
 
 
-typedef byte palindex_t;
-typedef DWORD argb_t;
-
-// rt_rawcolor does no color mapping and only uses the default palette.
-template<typename pixel_t>
-static forceinline pixel_t rt_rawcolor(const shaderef_t &pal, const byte c);
-
-// rt_mapcolor does color mapping.
-template<typename pixel_t>
-static forceinline pixel_t rt_mapcolor(const shaderef_t &pal, const byte c);
-
-// rt_tlatecolor does color mapping and translation.
-template<typename pixel_t>
-static forceinline pixel_t rt_tlatecolor(const shaderef_t &pal, const translationref_t &translation, const byte c);
-
-// rt_blend2 does alpha blending between two colors.
-template<typename pixel_t>
-static forceinline pixel_t rt_blend2(const pixel_t bg, const int bga, const pixel_t fg, const int fga);
-
-
-template<>
-static forceinline palindex_t rt_rawcolor<palindex_t>(const shaderef_t &pal, const byte c)
-{
-	// NOTE(jsd): For rawcolor we do no index.
-	return (c);
-}
-
-template<>
-static forceinline argb_t rt_rawcolor<argb_t>(const shaderef_t &pal, const byte c)
-{
-	return pal.shade(c);
-}
-
-
-template<>
-static forceinline palindex_t rt_mapcolor<palindex_t>(const shaderef_t &pal, const byte c)
-{
-	return pal.index(c);
-}
-
-template<>
-static forceinline argb_t rt_mapcolor<argb_t>(const shaderef_t &pal, const byte c)
-{
-	return pal.shade(c);
-}
-
-
-template<>
-static forceinline palindex_t rt_tlatecolor<palindex_t>(const shaderef_t &pal, const translationref_t &translation, const byte c)
-{
-	return translation.tlate(c);
-}
-
-template<>
-static forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translationref_t &translation, const byte c)
-{
-	return pal.tlate(translation, c);
-}
-
-
-template<>
-static forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
-{
-	// Crazy 8bpp alpha-blending using lookup tables and bit twiddling magic
-	argb_t bgARGB = Col2RGB8[bga >> 2][bg];
-	argb_t fgARGB = Col2RGB8[fga >> 2][fg];
-
-	argb_t mix = (fgARGB + bgARGB) | 0x1f07c1f;
-	return RGB32k[0][0][mix & (mix >> 15)];
-}
-
-template<>
-static forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, const int fga)
-{
-	return alphablend2a(bg, bga, fg, fga);
-}
-
 
 template<typename pixel_t, int columns>
 static forceinline void rt_copycols(int hx, int sx, int yl, int yh);
@@ -392,65 +314,41 @@ static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh)
 	} while (--count);
 }
 
+
 template<typename pixel_t>
-static forceinline void rtt_lucent4cols(byte *source, pixel_t *dest, int bga, int fga);
-
-template<>
-static forceinline void rtt_lucent4cols(byte *source, argb_t *dest, int bga, int fga)
+void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga)
 {
-#ifdef __SSE2__
-	// SSE2 temporaries:
-	const __m128i upper8mask = _mm_set_epi16(0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff);
-	const __m128i fgAlpha = _mm_set_epi16(0, fga, fga, fga, 0, fga, fga, fga);
-	const __m128i bgAlpha = _mm_set_epi16(0, bga, bga, bga, 0, bga, bga, bga);
-
-	const __m128i bgColors = _mm_loadu_si128((__m128i *)dest);
-	const __m128i fgColors = _mm_setr_epi32(
-		rt_mapcolor<argb_t>(dc_colormap, source[0]),
-		rt_mapcolor<argb_t>(dc_colormap, source[1]),
-		rt_mapcolor<argb_t>(dc_colormap, source[2]),
-		rt_mapcolor<argb_t>(dc_colormap, source[3])
-	);
-
-	const __m128i finalColors = _mm_packus_epi16(
-		_mm_srli_epi16(
-			_mm_adds_epu16(
-				_mm_mullo_epi16(_mm_and_si128(_mm_unpacklo_epi8(bgColors, bgColors), upper8mask), bgAlpha),
-				_mm_mullo_epi16(_mm_and_si128(_mm_unpacklo_epi8(fgColors, fgColors), upper8mask), fgAlpha)
-			),
-			8
-		),
-		_mm_srli_epi16(
-			_mm_adds_epu16(
-				_mm_mullo_epi16(_mm_and_si128(_mm_unpackhi_epi8(bgColors, bgColors), upper8mask), bgAlpha),
-				_mm_mullo_epi16(_mm_and_si128(_mm_unpackhi_epi8(fgColors, fgColors), upper8mask), fgAlpha)
-			),
-			8
-		)
-	);
-
-	_mm_storeu_si128((__m128i *)dest, finalColors);
-#else
 	for (int i = 0; i < 4; ++i)
 	{
-		const argb_t fg = rt_mapcolor<argb_t>(dc_colormap, source[i]);
-		const argb_t bg = dest[i];
+		const pixel_t fg = rt_mapcolor<pixel_t>(dc_colormap, source[i]);
+		const pixel_t bg = dest[i];
 
-		dest[i] = rt_blend2<argb_t>(bg, bga, fg, fga);
+		dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
 	}
-#endif
+}
+
+
+void (*rtv_lucent4colsP)(byte *source, palindex_t *dest, int bga, int fga) = NULL;
+void (*rtv_lucent4colsD)(byte *source, argb_t *dest, int bga, int fga) = NULL;
+
+
+template<typename pixel_t>
+static forceinline void rtv_lucent4cols(byte *source, pixel_t *dest, int bga, int fga);
+
+template<>
+static forceinline void rtv_lucent4cols(byte *source, palindex_t *dest, int bga, int fga)
+{
+	if (rtv_lucent4colsP == NULL)
+		rtv_lucent4colsP = rtv_lucent4cols_c<palindex_t>;
+	rtv_lucent4colsP(source, dest, bga, fga);
 }
 
 template<>
-static forceinline void rtt_lucent4cols(byte *source, palindex_t *dest, int bga, int fga)
+static forceinline void rtv_lucent4cols(byte *source, argb_t *dest, int bga, int fga)
 {
-	for (int i = 0; i < 4; ++i)
-	{
-		const palindex_t fg = rt_mapcolor<palindex_t>(dc_colormap, source[i]);
-		const palindex_t bg = dest[i];
-
-		dest[i] = rt_blend2<palindex_t>(bg, bga, fg, fga);
-	}
+	if (rtv_lucent4colsD == NULL)
+		rtv_lucent4colsD = rtv_lucent4cols_c<argb_t>;
+	rtv_lucent4colsD(source, dest, bga, fga);
 }
 
 
@@ -487,7 +385,7 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 	{
 		if (columns == 4)
 		{
-			rtt_lucent4cols<pixel_t>(source, dest, bga, fga);
+			rtv_lucent4cols<pixel_t>(source, dest, bga, fga);
 		}
 		else
 		{

@@ -467,8 +467,8 @@ extern byte newgamma[256];
 EXTERN_CVAR (gammalevel)
 
 // Translucency tables
-extern unsigned int Col2RGB8[65][256];
-extern byte RGB32k[32][32][32];
+extern argb_t Col2RGB8[65][256];
+extern palindex_t RGB32k[32][32][32];
 
 // Allocates buffer screens, call before R_Init.
 void V_Init (void);
@@ -496,6 +496,23 @@ std::string V_GetColorStringByName (const char *name);
 
 
 BOOL V_SetResolution (int width, int height, int bpp);
+
+template<>
+static forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
+{
+	// Crazy 8bpp alpha-blending using lookup tables and bit twiddling magic
+	argb_t bgARGB = Col2RGB8[bga >> 2][bg];
+	argb_t fgARGB = Col2RGB8[fga >> 2][fg];
+
+	argb_t mix = (fgARGB + bgARGB) | 0x1f07c1f;
+	return RGB32k[0][0][mix & (mix >> 15)];
+}
+
+template<>
+static forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, const int fga)
+{
+	return alphablend2a(bg, bga, fg, fga);
+}
 
 #endif // __V_VIDEO_H__
 

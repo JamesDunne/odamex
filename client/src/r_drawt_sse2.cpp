@@ -79,6 +79,54 @@
 
 // Direct rendering (32-bit) functions for SSE2 optimization:
 
+template<>
+void rtv_lucent4cols_SSE2(byte *source, argb_t *dest, int bga, int fga)
+{
+	// SSE2 temporaries:
+	const __m128i upper8mask = _mm_set_epi16(0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff);
+	const __m128i fgAlpha = _mm_set_epi16(0, fga, fga, fga, 0, fga, fga, fga);
+	const __m128i bgAlpha = _mm_set_epi16(0, bga, bga, bga, 0, bga, bga, bga);
+
+	const __m128i bgColors = _mm_loadu_si128((__m128i *)dest);
+	const __m128i fgColors = _mm_setr_epi32(
+		rt_mapcolor<argb_t>(dc_colormap, source[0]),
+		rt_mapcolor<argb_t>(dc_colormap, source[1]),
+		rt_mapcolor<argb_t>(dc_colormap, source[2]),
+		rt_mapcolor<argb_t>(dc_colormap, source[3])
+	);
+
+	const __m128i finalColors = _mm_packus_epi16(
+		_mm_srli_epi16(
+			_mm_adds_epu16(
+				_mm_mullo_epi16(_mm_and_si128(_mm_unpacklo_epi8(bgColors, bgColors), upper8mask), bgAlpha),
+				_mm_mullo_epi16(_mm_and_si128(_mm_unpacklo_epi8(fgColors, fgColors), upper8mask), fgAlpha)
+			),
+			8
+		),
+		_mm_srli_epi16(
+			_mm_adds_epu16(
+				_mm_mullo_epi16(_mm_and_si128(_mm_unpackhi_epi8(bgColors, bgColors), upper8mask), bgAlpha),
+				_mm_mullo_epi16(_mm_and_si128(_mm_unpackhi_epi8(fgColors, fgColors), upper8mask), fgAlpha)
+			),
+			8
+		)
+	);
+
+	_mm_storeu_si128((__m128i *)dest, finalColors);
+}
+
+template<>
+void rtv_lucent4cols_SSE2(byte *source, palindex_t *dest, int bga, int fga)
+{
+	for (int i = 0; i < 4; ++i)
+	{
+		const palindex_t fg = rt_mapcolor<palindex_t>(dc_colormap, source[i]);
+		const palindex_t bg = dest[i];
+
+		dest[i] = rt_blend2<palindex_t>(bg, bga, fg, fga);
+	}
+}
+
 void r_dimpatchD_SSE2(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h)
 {
 	int x, y, i;

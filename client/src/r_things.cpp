@@ -1804,13 +1804,13 @@ void R_DrawParticleP (vissprite_t *vis, int x1, int x2)
 
 	// vis->mobjflags holds translucency level (0-255)
 	{
-		unsigned int *bg2rgb;
+		argb_t *bg2rgb;
 		int countbase = x2 - x1 + 1;
 		int ycount;
 		int colsize = ds_colsize;
 		int spacing;
 		byte *dest;
-		unsigned int fg;
+		argb_t fg;
 
 		ycount = yh - yl;
 		if (ycount < 0)
@@ -1819,7 +1819,7 @@ void R_DrawParticleP (vissprite_t *vis, int x1, int x2)
 
 		{
 			fixed_t fglevel, bglevel;
-			unsigned int *fg2rgb;
+			argb_t *fg2rgb;
 
 			fglevel = ((vis->mobjflags + 1) << 8) & ~0x3ff;
 			bglevel = FRACUNIT-fglevel;
@@ -1836,7 +1836,7 @@ void R_DrawParticleP (vissprite_t *vis, int x1, int x2)
 			int count = countbase;
 			do
 			{
-				unsigned int bg = bg2rgb[*dest];
+				argb_t bg = bg2rgb[*dest];
 				bg = (fg+bg) | 0x1f07c1f;
 				*dest = RGB32k[0][0][bg & (bg>>15)];
 				dest += colsize;
