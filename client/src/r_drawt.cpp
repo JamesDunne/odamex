@@ -37,6 +37,9 @@
 #include "r_things.h"
 #include "v_video.h"
 
+void (*rtv_lucent4colsP)(byte *source, palindex_t *dest, int bga, int fga) = NULL;
+void (*rtv_lucent4colsD)(byte *source, argb_t *dest, int bga, int fga) = NULL;
+
 
 // Palettized functions:
 
@@ -315,22 +318,6 @@ static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh)
 }
 
 
-template<typename pixel_t>
-void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga)
-{
-	for (int i = 0; i < 4; ++i)
-	{
-		const pixel_t fg = rt_mapcolor<pixel_t>(dc_colormap, source[i]);
-		const pixel_t bg = dest[i];
-
-		dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
-	}
-}
-
-
-void (*rtv_lucent4colsP)(byte *source, palindex_t *dest, int bga, int fga) = NULL;
-void (*rtv_lucent4colsD)(byte *source, argb_t *dest, int bga, int fga) = NULL;
-
 
 template<typename pixel_t>
 static forceinline void rtv_lucent4cols(byte *source, pixel_t *dest, int bga, int fga);
@@ -338,16 +325,12 @@ static forceinline void rtv_lucent4cols(byte *source, pixel_t *dest, int bga, in
 template<>
 static forceinline void rtv_lucent4cols(byte *source, palindex_t *dest, int bga, int fga)
 {
-	if (rtv_lucent4colsP == NULL)
-		rtv_lucent4colsP = rtv_lucent4cols_c<palindex_t>;
 	rtv_lucent4colsP(source, dest, bga, fga);
 }
 
 template<>
 static forceinline void rtv_lucent4cols(byte *source, argb_t *dest, int bga, int fga)
 {
-	if (rtv_lucent4colsD == NULL)
-		rtv_lucent4colsD = rtv_lucent4cols_c<argb_t>;
 	rtv_lucent4colsD(source, dest, bga, fga);
 }
 

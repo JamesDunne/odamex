@@ -2001,6 +2001,8 @@ void R_InitDrawers ()
 	if (optimize_kind == OPTIMIZE_SSE2)
 	{
 #ifdef __SSE2__
+		rtv_lucent4colsP        = rtv_lucent4cols_SSE2;
+		rtv_lucent4colsD        = rtv_lucent4cols_SSE2;
 		r_dimpatchD             = r_dimpatchD_SSE2;
 #else
 		// No SSE2 support compiled in.
@@ -2011,6 +2013,8 @@ void R_InitDrawers ()
 	else if (optimize_kind == OPTIMIZE_MMX)
 	{
 #ifdef __MMX__
+		rtv_lucent4colsp        = rtv_lucent4cols_MMX;
+		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
 		r_dimpatchD             = r_dimpatchD_MMX;
 #else
 		// No MMX support compiled in.
@@ -2021,6 +2025,8 @@ void R_InitDrawers ()
 	else if (optimize_kind == OPTIMIZE_ALTIVEC)
 	{
 #ifdef __ALTIVEC__
+		rtv_lucent4colsp        = rtv_lucent4cols_ALTIVEC;
+		rtv_lucent4colsD        = rtv_lucent4cols_ALTIVEC;
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 #else
 		// No ALTIVEC support compiled in.
@@ -2032,10 +2038,14 @@ void R_InitDrawers ()
 	{
 		// No CPU vectorization available.
 setNone:
+		rtv_lucent4colsP        = rtv_lucent4cols_c;
+		rtv_lucent4colsD        = rtv_lucent4cols_c;
 		r_dimpatchD             = r_dimpatchD_c;
 	}
 
 	// Check that all pointers are definitely assigned!
+	assert(rtv_lucent4colsP != NULL);
+	assert(rtv_lucent4colsD != NULL);
 	assert(r_dimpatchD != NULL);
 }
 

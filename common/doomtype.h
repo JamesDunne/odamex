@@ -258,18 +258,18 @@ forceinline T clamp (const T in, const T min, const T max)
 // 0 <=   toa <= 256
 forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int toa)
 {
-	const byte fr = RPART(from);
-	const byte fg = GPART(from);
-	const byte fb = BPART(from);
+	const int fr = RPART(from);
+	const int fg = GPART(from);
+	const int fb = BPART(from);
 
 	const int dr = RPART(to) - fr;
 	const int dg = GPART(to) - fg;
 	const int db = BPART(to) - fb;
 
 	return MAKERGB(
-		fr + ((dr * toa) / 256),
-		fg + ((dg * toa) / 256),
-		fb + ((db * toa) / 256)
+		fr + ((dr * toa) >> 8),
+		fg + ((dg * toa) >> 8),
+		fb + ((db * toa) >> 8)
 	);
 }
 
@@ -278,18 +278,10 @@ forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int to
 // 0 <=   toa <= 256
 forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa)
 {
-	const byte fr = (byte)((RPART(from) * froma) / 256);
-	const byte fg = (byte)((GPART(from) * froma) / 256);
-	const byte fb = (byte)((BPART(from) * froma) / 256);
-
-	const int dr = RPART(to) - fr;
-	const int dg = GPART(to) - fg;
-	const int db = BPART(to) - fb;
-
 	return MAKERGB(
-		fr + ((dr * toa) / 256),
-		fg + ((dg * toa) / 256),
-		fb + ((db * toa) / 256)
+		(RPART(from) * froma + RPART(to) * toa) >> 8,
+		(GPART(from) * froma + GPART(to) * toa) >> 8,
+		(BPART(from) * froma + BPART(to) * toa) >> 8
 	);
 }
 

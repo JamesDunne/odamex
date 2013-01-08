@@ -155,7 +155,17 @@ void rt_initcols (void);
 // Vectorizable functions:
 
 template<typename pixel_t>
-void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga);
+void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga)
+{
+	for (int i = 0; i < 4; ++i)
+	{
+		const pixel_t fg = rt_mapcolor<pixel_t>(dc_colormap, source[i]);
+		const pixel_t bg = dest[i];
+
+		dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
+	}
+}
+
 void r_dimpatchD_c(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 
 #ifdef __SSE2__
