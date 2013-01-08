@@ -103,12 +103,6 @@ void (*rt_tlatelucent2cols) (int hx, int sx, int yl, int yh);
 void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
 // Possibly vectorized functions:
-void (*rt_copy4colsD) (int sx, int yl, int yh);
-void (*rt_map4colsD) (int sx, int yl, int yh);
-void (*rt_lucent4colsD) (int sx, int yl, int yh);
-void (*rt_tlate4colsD) (int sx, int yl, int yh);
-void (*rt_tlatelucent4colsD) (int sx, int yl, int yh);
-void (*R_DrawSpanD)(void);
 void (*r_dimpatchD)(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 
 //
@@ -1330,7 +1324,7 @@ void R_DrawTranslatedColumnD (void)
 
 
 
-void R_DrawSpanD_c (void)
+void R_DrawSpanD (void)
 {
 	dsfixed_t			xfrac;
 	dsfixed_t			yfrac;
@@ -2044,8 +2038,8 @@ void R_InitColumnDrawers ()
 		R_DrawFuzzColumn		= R_DrawFuzzColumnP;
 		R_DrawTranslucentColumn = R_DrawTranslucentColumnP;
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP;
-		R_DrawSpan				= R_DrawSpanP;
 		R_DrawSlopeSpan         = R_DrawSlopeSpanP;
+		R_DrawSpan				= R_DrawSpanP;
 
 		rt_copy1col             = rt_copy1colP;
 		rt_copy2cols            = rt_copy2colsP;
@@ -2071,25 +2065,23 @@ void R_InitColumnDrawers ()
 		R_DrawTranslucentColumn = R_DrawTranslucentColumnD;
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
+		R_DrawSpan				= R_DrawSpanD;
 
-		// Non-vectorized functions:
-		rt_copy1col             = rt_copy1colD_c;
-		rt_copy2cols            = rt_copy2colsD_c;
-		rt_map1col              = rt_map1colD_c;
-		rt_map2cols             = rt_map2colsD_c;
-		rt_lucent1col			= rt_lucent1colD_c;
-		rt_lucent2cols          = rt_lucent2colsD_c;
-		rt_tlate1col            = rt_tlate1colD_c;
-		rt_tlate2cols           = rt_tlate2colsD_c;
-		rt_tlatelucent1col      = rt_tlatelucent1colD_c;
-		rt_tlatelucent2cols     = rt_tlatelucent2colsD_c;
-
-		rt_copy4cols            = rt_copy4colsD_c;
-		rt_map4cols             = rt_map4colsD_c;
-		rt_lucent4cols          = rt_lucent4colsD_c;
-		rt_tlate4cols           = rt_tlate4colsD_c;
-		rt_tlatelucent4cols     = rt_tlatelucent4colsD_c;
-		R_DrawSpan				= R_DrawSpanD_c;
+		rt_copy1col             = rt_copy1colD;
+		rt_copy2cols            = rt_copy2colsD;
+		rt_copy4cols            = rt_copy4colsD;
+		rt_map1col              = rt_map1colD;
+		rt_map2cols             = rt_map2colsD;
+		rt_map4cols             = rt_map4colsD;
+		rt_lucent1col			= rt_lucent1colD;
+		rt_lucent2cols          = rt_lucent2colsD;
+		rt_lucent4cols          = rt_lucent4colsD;
+		rt_tlate1col            = rt_tlate1colD;
+		rt_tlate2cols           = rt_tlate2colsD;
+		rt_tlate4cols           = rt_tlate4colsD;
+		rt_tlatelucent1col      = rt_tlatelucent1colD;
+		rt_tlatelucent2cols     = rt_tlatelucent2colsD;
+		rt_tlatelucent4cols     = rt_tlatelucent4colsD;
 	}
 }
 

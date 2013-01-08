@@ -575,77 +575,77 @@ void rt_tlatelucent4colsP (int sx, int yl, int yh)
 // Direct rendering (32-bit) functions:
 
 
-void rt_copy1colD_c (int hx, int sx, int yl, int yh)
+void rt_copy1colD (int hx, int sx, int yl, int yh)
 {
 	rt_copycols<DWORD, 1>(hx, sx, yl, yh);
 }
 
-void rt_copy2colsD_c (int hx, int sx, int yl, int yh)
+void rt_copy2colsD (int hx, int sx, int yl, int yh)
 {
 	rt_copycols<DWORD, 2>(hx, sx, yl, yh);
 }
 
-void rt_copy4colsD_c (int sx, int yl, int yh)
+void rt_copy4colsD (int sx, int yl, int yh)
 {
 	rt_copycols<DWORD, 4>(0, sx, yl, yh);
 }
 
-void rt_map1colD_c (int hx, int sx, int yl, int yh)
+void rt_map1colD (int hx, int sx, int yl, int yh)
 {
 	rt_mapcols<DWORD, 1>(hx, sx, yl, yh);
 }
 
-void rt_map2colsD_c (int hx, int sx, int yl, int yh)
+void rt_map2colsD (int hx, int sx, int yl, int yh)
 {
 	rt_mapcols<DWORD, 2>(hx, sx, yl, yh);
 }
 
-void rt_map4colsD_c (int sx, int yl, int yh)
+void rt_map4colsD (int sx, int yl, int yh)
 {
 	rt_mapcols<DWORD, 4>(0, sx, yl, yh);
 }
 
-void rt_tlate1colD_c (int hx, int sx, int yl, int yh)
+void rt_tlate1colD (int hx, int sx, int yl, int yh)
 {
 	rt_tlatecols<DWORD, 1>(hx, sx, yl, yh);
 }
 
-void rt_tlate2colsD_c (int hx, int sx, int yl, int yh)
+void rt_tlate2colsD (int hx, int sx, int yl, int yh)
 {
 	rt_tlatecols<DWORD, 2>(hx, sx, yl, yh);
 }
 
-void rt_tlate4colsD_c (int sx, int yl, int yh)
+void rt_tlate4colsD (int sx, int yl, int yh)
 {
 	rt_tlatecols<DWORD, 4>(0, sx, yl, yh);
 }
 
-void rt_lucent1colD_c (int hx, int sx, int yl, int yh)
+void rt_lucent1colD (int hx, int sx, int yl, int yh)
 {
 	rt_lucentcols<DWORD, 1>(hx, sx, yl, yh);
 }
 
-void rt_lucent2colsD_c (int hx, int sx, int yl, int yh)
+void rt_lucent2colsD (int hx, int sx, int yl, int yh)
 {
 	rt_lucentcols<DWORD, 2>(hx, sx, yl, yh);
 }
 
-void rt_lucent4colsD_c (int sx, int yl, int yh)
+void rt_lucent4colsD (int sx, int yl, int yh)
 {
 	rt_lucentcols<DWORD, 4>(0, sx, yl, yh);
 }
 
-void rt_tlatelucent1colD_c (int hx, int sx, int yl, int yh)
+void rt_tlatelucent1colD (int hx, int sx, int yl, int yh)
 {
 	rt_tlatelucentcols<DWORD, 1>(hx, sx, yl, yh);
 }
 
-void rt_tlatelucent2colsD_c (int hx, int sx, int yl, int yh)
+void rt_tlatelucent2colsD (int hx, int sx, int yl, int yh)
 {
 	rt_tlatelucentcols<DWORD, 2>(hx, sx, yl, yh);
 }
 
-void rt_tlatelucent4colsD_c (int sx, int yl, int yh)
+void rt_tlatelucent4colsD (int sx, int yl, int yh)
 {
 	rt_tlatelucentcols<DWORD, 4>(0, sx, yl, yh);
 }

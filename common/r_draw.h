@@ -127,16 +127,23 @@ void rt_tlatelucent1colP (int hx, int sx, int yl, int yh);
 void rt_tlatelucent2colsP (int hx, int sx, int yl, int yh);
 void rt_tlatelucent4colsP (int sx, int yl, int yh);
 
-void rt_copy1colD_c (int hx, int sx, int yl, int yh);
-void rt_copy2colsD_c (int hx, int sx, int yl, int yh);
-void rt_map1colD_c (int hx, int sx, int yl, int yh);
-void rt_map2colsD_c (int hx, int sx, int yl, int yh);
-void rt_lucent1colD_c (int hx, int sx, int yl, int yh);
-void rt_lucent2colsD_c (int hx, int sx, int yl, int yh);
-void rt_tlate1colD_c (int hx, int sx, int yl, int yh);
-void rt_tlate2colsD_c (int hx, int sx, int yl, int yh);
-void rt_tlatelucent1colD_c (int hx, int sx, int yl, int yh);
-void rt_tlatelucent2colsD_c (int hx, int sx, int yl, int yh);
+void rt_copy1colD (int hx, int sx, int yl, int yh);
+void rt_copy2colsD (int hx, int sx, int yl, int yh);
+void rt_copy4colsD (int sx, int yl, int yh);
+void rt_map1colD (int hx, int sx, int yl, int yh);
+void rt_map2colsD (int hx, int sx, int yl, int yh);
+void rt_map4colsD (int sx, int yl, int yh);
+void rt_lucent1colD (int hx, int sx, int yl, int yh);
+void rt_lucent2colsD (int hx, int sx, int yl, int yh);
+void rt_lucent4colsD (int sx, int yl, int yh);
+void rt_tlate1colD (int hx, int sx, int yl, int yh);
+void rt_tlate2colsD (int hx, int sx, int yl, int yh);
+void rt_tlate4colsD (int sx, int yl, int yh);
+void rt_tlatelucent1colD (int hx, int sx, int yl, int yh);
+void rt_tlatelucent2colsD (int hx, int sx, int yl, int yh);
+void rt_tlatelucent4colsD (int sx, int yl, int yh);
+
+void R_DrawSpanD(void);
 
 void rt_draw1col (int hx, int sx);
 void rt_draw2cols (int hx, int sx);
@@ -146,43 +153,15 @@ void rt_draw4cols (int sx);
 void rt_initcols (void);
 
 // Vectorizable functions:
-void rt_copy4colsD_c (int sx, int yl, int yh);
-void rt_map4colsD_c (int sx, int yl, int yh);
-void rt_lucent4colsD_c (int sx, int yl, int yh);
-void rt_tlate4colsD_c (int sx, int yl, int yh);
-void rt_tlatelucent4colsD_c (int sx, int yl, int yh);
-
-void R_DrawSpanD_c(void);
 void r_dimpatchD_c(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 
 #ifdef __SSE2__
-void rt_copy4colsD_SSE2 (int sx, int yl, int yh);
-void rt_map4colsD_SSE2 (int sx, int yl, int yh);
-void rt_lucent4colsD_SSE2 (int sx, int yl, int yh);
-void rt_tlate4colsD_SSE2 (int sx, int yl, int yh);
-void rt_tlatelucent4colsD_SSE2 (int sx, int yl, int yh);
-
-void R_DrawSpanD_SSE2(void);
 void r_dimpatchD_SSE2(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 #endif
 #ifdef __MMX__
-void rt_copy4colsD_MMX (int sx, int yl, int yh);
-void rt_map4colsD_MMX (int sx, int yl, int yh);
-void rt_lucent4colsD_MMX (int sx, int yl, int yh);
-void rt_tlate4colsD_MMX (int sx, int yl, int yh);
-void rt_tlatelucent4colsD_MMX (int sx, int yl, int yh);
-
-void R_DrawSpanD_MMX(void);
 void r_dimpatchD_MMX(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 #endif
 #ifdef __ALTIVEC__
-void rt_copy4colsD_ALTIVEC (int sx, int yl, int yh);
-void rt_map4colsD_ALTIVEC (int sx, int yl, int yh);
-void rt_lucent4colsD_ALTIVEC (int sx, int yl, int yh);
-void rt_tlate4colsD_ALTIVEC (int sx, int yl, int yh);
-void rt_tlatelucent4colsD_ALTIVEC (int sx, int yl, int yh);
-
-void R_DrawSpanD_ALTIVEC(void);
 void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 #endif
 
@@ -204,13 +183,6 @@ extern void (*rt_tlatelucent2cols) (int hx, int sx, int yl, int yh);
 extern void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
 // Vectorizable function pointers:
-extern void (*rt_copy4colsD) (int sx, int yl, int yh);
-extern void (*rt_map4colsD) (int sx, int yl, int yh);
-extern void (*rt_lucent4colsD) (int sx, int yl, int yh);
-extern void (*rt_tlate4colsD) (int sx, int yl, int yh);
-extern void (*rt_tlatelucent4colsD) (int sx, int yl, int yh);
-
-extern void (*R_DrawSpanD)(void);
 extern void (*r_dimpatchD)(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
 
 extern "C" int				ds_colsize;		// [RH] Distance between columns
