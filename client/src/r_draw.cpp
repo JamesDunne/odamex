@@ -507,7 +507,6 @@ void R_DrawTranslucentColumnP (void)
 	byte *dest;
 	fixed_t frac;
 	fixed_t fracstep;
-	argb_t *fg2rgb, *bg2rgb;
 
 	count = dc_yh - dc_yl;
 	if (count < 0)
@@ -2013,7 +2012,7 @@ void R_InitDrawers ()
 	else if (optimize_kind == OPTIMIZE_MMX)
 	{
 #ifdef __MMX__
-		rtv_lucent4colsp        = rtv_lucent4cols_MMX;
+		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
 		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
 		r_dimpatchD             = r_dimpatchD_MMX;
 #else
@@ -2025,7 +2024,7 @@ void R_InitDrawers ()
 	else if (optimize_kind == OPTIMIZE_ALTIVEC)
 	{
 #ifdef __ALTIVEC__
-		rtv_lucent4colsp        = rtv_lucent4cols_ALTIVEC;
+		rtv_lucent4colsP        = rtv_lucent4cols_ALTIVEC;
 		rtv_lucent4colsD        = rtv_lucent4cols_ALTIVEC;
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 #else
