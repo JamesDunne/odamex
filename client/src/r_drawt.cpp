@@ -392,6 +392,68 @@ static forceinline void rt_tlatecols(int hx, int sx, int yl, int yh)
 	} while (--count);
 }
 
+template<typename pixel_t>
+static forceinline void rtt_lucent4cols(byte *source, pixel_t *dest, int bga, int fga);
+
+template<>
+static forceinline void rtt_lucent4cols(byte *source, argb_t *dest, int bga, int fga)
+{
+#ifdef __SSE2__
+	// SSE2 temporaries:
+	const __m128i upper8mask = _mm_set_epi16(0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff);
+	const __m128i fgAlpha = _mm_set_epi16(0, fga, fga, fga, 0, fga, fga, fga);
+	const __m128i bgAlpha = _mm_set_epi16(0, bga, bga, bga, 0, bga, bga, bga);
+
+	const __m128i bgColors = _mm_loadu_si128((__m128i *)dest);
+	const __m128i fgColors = _mm_setr_epi32(
+		rt_mapcolor<argb_t>(dc_colormap, source[0]),
+		rt_mapcolor<argb_t>(dc_colormap, source[1]),
+		rt_mapcolor<argb_t>(dc_colormap, source[2]),
+		rt_mapcolor<argb_t>(dc_colormap, source[3])
+	);
+
+	const __m128i finalColors = _mm_packus_epi16(
+		_mm_srli_epi16(
+			_mm_adds_epu16(
+				_mm_mullo_epi16(_mm_and_si128(_mm_unpacklo_epi8(bgColors, bgColors), upper8mask), bgAlpha),
+				_mm_mullo_epi16(_mm_and_si128(_mm_unpacklo_epi8(fgColors, fgColors), upper8mask), fgAlpha)
+			),
+			8
+		),
+		_mm_srli_epi16(
+			_mm_adds_epu16(
+				_mm_mullo_epi16(_mm_and_si128(_mm_unpackhi_epi8(bgColors, bgColors), upper8mask), bgAlpha),
+				_mm_mullo_epi16(_mm_and_si128(_mm_unpackhi_epi8(fgColors, fgColors), upper8mask), fgAlpha)
+			),
+			8
+		)
+	);
+
+	_mm_storeu_si128((__m128i *)dest, finalColors);
+#else
+	for (int i = 0; i < 4; ++i)
+	{
+		const argb_t fg = rt_mapcolor<argb_t>(dc_colormap, source[i]);
+		const argb_t bg = dest[i];
+
+		dest[i] = rt_blend2<argb_t>(bg, bga, fg, fga);
+	}
+#endif
+}
+
+template<>
+static forceinline void rtt_lucent4cols(byte *source, palindex_t *dest, int bga, int fga)
+{
+	for (int i = 0; i < 4; ++i)
+	{
+		const palindex_t fg = rt_mapcolor<palindex_t>(dc_colormap, source[i]);
+		const palindex_t bg = dest[i];
+
+		dest[i] = rt_blend2<palindex_t>(bg, bga, fg, fga);
+	}
+}
+
+
 template<typename pixel_t, int columns>
 static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 {
@@ -423,12 +485,19 @@ static forceinline void rt_lucentcols(int hx, int sx, int yl, int yh)
 
 	do
 	{
-		for (int i = 0; i < columns; ++i)
+		if (columns == 4)
 		{
-			const pixel_t fg = rt_mapcolor<pixel_t>(dc_colormap, source[i]);
-			const pixel_t bg = dest[i];
+			rtt_lucent4cols<pixel_t>(source, dest, bga, fga);
+		}
+		else
+		{
+			for (int i = 0; i < columns; ++i)
+			{
+				const pixel_t fg = rt_mapcolor<pixel_t>(dc_colormap, source[i]);
+				const pixel_t bg = dest[i];
 
-			dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
+				dest[i] = rt_blend2<pixel_t>(bg, bga, fg, fga);
+			}
 		}
 
 		source += 4;
