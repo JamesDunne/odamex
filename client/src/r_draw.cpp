@@ -1372,6 +1372,70 @@ void R_DrawSpanD (void)
 	xstep = ds_xstep;
 	ystep = ds_ystep;
 
+#if 1
+	assert(ds_colsize == 1);
+
+	// Blit until we align ourselves with a 16-byte offset for SSE2:
+	while (((size_t)dest) & 15)
+	{
+		// Current texture index in u,v.
+		spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
+
+		// Lookup pixel from flat texture tile,
+		//  re-index using light/colormap.
+		*dest = ds_colormap.shade(ds_source[spot]);
+		dest += ds_colsize;
+
+		// Next step in u,v.
+		xfrac += xstep;
+		yfrac += ystep;
+
+		--count;
+	}
+
+	const int rounds = count / 4;
+	if (rounds > 0)
+	{
+		// SSE2 optimized and aligned stores for quicker memory writes:
+		for (int i = 0; i < rounds; ++i, count -= 4)
+		{
+			// TODO(jsd): Consider SSE2 bit twiddling here!
+			const int spot0 = (((yfrac+ystep*0)>>(32-6-6))&(63*64)) + ((xfrac+xstep*0)>>(32-6));
+			const int spot1 = (((yfrac+ystep*1)>>(32-6-6))&(63*64)) + ((xfrac+xstep*1)>>(32-6));
+			const int spot2 = (((yfrac+ystep*2)>>(32-6-6))&(63*64)) + ((xfrac+xstep*2)>>(32-6));
+			const int spot3 = (((yfrac+ystep*3)>>(32-6-6))&(63*64)) + ((xfrac+xstep*3)>>(32-6));
+
+			const __m128i finalColors = _mm_setr_epi32(
+				ds_colormap.shade(ds_source[spot0]),
+				ds_colormap.shade(ds_source[spot1]),
+				ds_colormap.shade(ds_source[spot2]),
+				ds_colormap.shade(ds_source[spot3])
+			);
+			_mm_store_si128((__m128i *)dest, finalColors);
+			dest += 4;
+
+			// Next step in u,v.
+			xfrac += xstep*4;
+			yfrac += ystep*4;
+		}
+
+		// Blit the last remainder:
+		while (count--)
+		{
+			// Current texture index in u,v.
+			spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
+
+			// Lookup pixel from flat texture tile,
+			//  re-index using light/colormap.
+			*dest = ds_colormap.shade(ds_source[spot]);
+			dest += ds_colsize;
+
+			// Next step in u,v.
+			xfrac += xstep;
+			yfrac += ystep;
+		}
+	}
+#else
 	do {
 		// Current texture index in u,v.
 		spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
@@ -1385,6 +1449,7 @@ void R_DrawSpanD (void)
 		xfrac += xstep;
 		yfrac += ystep;
 	} while (--count);
+#endif
 }
 
 void R_DrawSlopeSpanD(void)
