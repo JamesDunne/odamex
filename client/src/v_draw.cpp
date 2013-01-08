@@ -427,7 +427,7 @@ void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, i
 
 	do
 	{
-		*((unsigned int *)dest) = V_Palette.tlate(*source++, V_ColorMap);
+		*((unsigned int *)dest) = V_Palette.tlate(V_ColorMap, *source++);
 		dest += pitch; 
 	} while (--count);
 }
@@ -441,7 +441,7 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		*((unsigned int *)dest) = V_Palette.tlate(source[c >> 16], V_ColorMap);
+		*((unsigned int *)dest) = V_Palette.tlate(V_ColorMap, source[c >> 16]);
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -459,7 +459,7 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 
 	do
 	{
-		DWORD fg = V_Palette.tlate(*source++, V_ColorMap);
+		DWORD fg = V_Palette.tlate(V_ColorMap, *source++);
 		DWORD bg = *((DWORD *)dest);
 #if 1
 		*((DWORD *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
@@ -482,7 +482,7 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 
 	do
 	{
-		DWORD fg = V_Palette.tlate(source[c >> 16], V_ColorMap);
+		DWORD fg = V_Palette.tlate(V_ColorMap, source[c >> 16]);
 		DWORD bg = *((DWORD *)dest);
 #if 1
 		*((DWORD *)dest) = alphablend2a(bg, invAlpha, fg, alpha);

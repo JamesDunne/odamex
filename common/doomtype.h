@@ -367,7 +367,7 @@ public:
 	const int mapnum() const;
 	const byte ramp() const;
 
-	DWORD tlate(const byte c, const translationref_t &translation) const;
+	DWORD tlate(const translationref_t &translation, const byte c) const;
 
 	bool operator==(const shaderef_t &other) const;
 };

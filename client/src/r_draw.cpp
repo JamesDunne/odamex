@@ -1307,7 +1307,7 @@ void R_DrawTranslatedColumnD (void)
 
 			do
 			{
-				*dest = dc_colormap.tlate(source[(frac>>FRACBITS)], dc_translation);
+				*dest = dc_colormap.tlate(dc_translation, source[(frac>>FRACBITS)]);
 				dest += pitch;
 
 				if ((frac += fracstep) >= texheight)
@@ -1319,7 +1319,7 @@ void R_DrawTranslatedColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				*dest = dc_colormap.tlate(source[(frac>>FRACBITS) & mask], dc_translation);
+				*dest = dc_colormap.tlate(dc_translation, source[(frac>>FRACBITS) & mask]);
 				dest += pitch;
 			
 				frac += fracstep;

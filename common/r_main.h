@@ -213,7 +213,7 @@ inline const byte shaderef_t::ramp() const
 
 extern DWORD translationRGB[MAXPLAYERS+1][16];
 
-inline DWORD shaderef_t::tlate(const byte c, const translationref_t &translation) const
+inline DWORD shaderef_t::tlate(const translationref_t &translation, const byte c) const
 {
 	int pid = translation.getPlayerID();
 

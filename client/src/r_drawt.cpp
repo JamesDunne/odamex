@@ -242,7 +242,7 @@ static forceinline palindex_t rt_tlatecolor<palindex_t>(const shaderef_t &pal, c
 template<>
 static forceinline argb_t rt_tlatecolor<argb_t>(const shaderef_t &pal, const translationref_t &translation, const byte c)
 {
-	return pal.tlate(c, translation);
+	return pal.tlate(translation, c);
 }
 
 
