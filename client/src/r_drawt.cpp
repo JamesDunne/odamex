@@ -527,90 +527,90 @@ void rt_tlatelucent4colsP (int sx, int yl, int yh)
 
 void rt_copy1colD (int hx, int sx, int yl, int yh)
 {
-	rt_copycols<DWORD, 1>(hx, sx, yl, yh);
+	rt_copycols<argb_t, 1>(hx, sx, yl, yh);
 }
 
 void rt_copy2colsD (int hx, int sx, int yl, int yh)
 {
-	rt_copycols<DWORD, 2>(hx, sx, yl, yh);
+	rt_copycols<argb_t, 2>(hx, sx, yl, yh);
 }
 
 void rt_copy4colsD (int sx, int yl, int yh)
 {
-	rt_copycols<DWORD, 4>(0, sx, yl, yh);
+	rt_copycols<argb_t, 4>(0, sx, yl, yh);
 }
 
 void rt_map1colD (int hx, int sx, int yl, int yh)
 {
-	rt_mapcols<DWORD, 1>(hx, sx, yl, yh);
+	rt_mapcols<argb_t, 1>(hx, sx, yl, yh);
 }
 
 void rt_map2colsD (int hx, int sx, int yl, int yh)
 {
-	rt_mapcols<DWORD, 2>(hx, sx, yl, yh);
+	rt_mapcols<argb_t, 2>(hx, sx, yl, yh);
 }
 
 void rt_map4colsD (int sx, int yl, int yh)
 {
-	rt_mapcols<DWORD, 4>(0, sx, yl, yh);
+	rt_mapcols<argb_t, 4>(0, sx, yl, yh);
 }
 
 void rt_tlate1colD (int hx, int sx, int yl, int yh)
 {
-	rt_tlatecols<DWORD, 1>(hx, sx, yl, yh);
+	rt_tlatecols<argb_t, 1>(hx, sx, yl, yh);
 }
 
 void rt_tlate2colsD (int hx, int sx, int yl, int yh)
 {
-	rt_tlatecols<DWORD, 2>(hx, sx, yl, yh);
+	rt_tlatecols<argb_t, 2>(hx, sx, yl, yh);
 }
 
 void rt_tlate4colsD (int sx, int yl, int yh)
 {
-	rt_tlatecols<DWORD, 4>(0, sx, yl, yh);
+	rt_tlatecols<argb_t, 4>(0, sx, yl, yh);
 }
 
 void rt_lucent1colD (int hx, int sx, int yl, int yh)
 {
-	rt_lucentcols<DWORD, 1>(hx, sx, yl, yh);
+	rt_lucentcols<argb_t, 1>(hx, sx, yl, yh);
 }
 
 void rt_lucent2colsD (int hx, int sx, int yl, int yh)
 {
-	rt_lucentcols<DWORD, 2>(hx, sx, yl, yh);
+	rt_lucentcols<argb_t, 2>(hx, sx, yl, yh);
 }
 
 void rt_lucent4colsD (int sx, int yl, int yh)
 {
-	rt_lucentcols<DWORD, 4>(0, sx, yl, yh);
+	rt_lucentcols<argb_t, 4>(0, sx, yl, yh);
 }
 
 void rt_tlatelucent1colD (int hx, int sx, int yl, int yh)
 {
-	rt_tlatelucentcols<DWORD, 1>(hx, sx, yl, yh);
+	rt_tlatelucentcols<argb_t, 1>(hx, sx, yl, yh);
 }
 
 void rt_tlatelucent2colsD (int hx, int sx, int yl, int yh)
 {
-	rt_tlatelucentcols<DWORD, 2>(hx, sx, yl, yh);
+	rt_tlatelucentcols<argb_t, 2>(hx, sx, yl, yh);
 }
 
 void rt_tlatelucent4colsD (int sx, int yl, int yh)
 {
-	rt_tlatelucentcols<DWORD, 4>(0, sx, yl, yh);
+	rt_tlatelucentcols<argb_t, 4>(0, sx, yl, yh);
 }
 
 
 // Functions for v_video.cpp support
 
-void r_dimpatchD_c(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_c(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
 	int x, y;
-	DWORD *line;
+	argb_t *line;
 	int invAlpha = 256 - alpha;
 
-	int dpitch = cvs->pitch / sizeof(DWORD);
-	line = (DWORD *)cvs->buffer + y1 * dpitch;
+	int dpitch = cvs->pitch / sizeof(argb_t);
+	line = (argb_t *)cvs->buffer + y1 * dpitch;
 
 	for (y = y1; y < y1 + h; y++)
 	{

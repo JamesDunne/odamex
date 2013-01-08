@@ -78,14 +78,14 @@
 
 // Direct rendering (32-bit) functions for MMX optimization:
 
-void r_dimpatchD_MMX(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_MMX(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
 	int x, y, i;
-	DWORD *line;
+	argb_t *line;
 	int invAlpha = 256 - alpha;
 
 	int dpitch = cvs->pitch / sizeof(DWORD);
-	line = (DWORD *)cvs->buffer + y1 * dpitch;
+	line = (argb_t *)cvs->buffer + y1 * dpitch;
 
 	int batches = w / 2;
 	int remainder = w & 1;

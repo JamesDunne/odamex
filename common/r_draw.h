@@ -166,24 +166,24 @@ void rtv_lucent4cols_c(byte *source, pixel_t *dest, int bga, int fga)
 	}
 }
 
-void r_dimpatchD_c(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_c(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 #ifdef __SSE2__
 template<typename pixel_t>
 void rtv_lucent4cols_SSE2(byte *source, pixel_t *dest, int bga, int fga);
-void r_dimpatchD_SSE2(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_SSE2(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 #ifdef __MMX__
 template<typename pixel_t>
 void rtv_lucent4cols_MMX(byte *source, pixel_t *dest, int bga, int fga);
-void r_dimpatchD_MMX(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_MMX(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 #ifdef __ALTIVEC__
 template<typename pixel_t>
 void rtv_lucent4cols_ALTIVEC(byte *source, pixel_t *dest, int bga, int fga);
-void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 // Palettized (8bpp) vs. Direct (32bpp) switchable function pointers:

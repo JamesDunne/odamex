@@ -76,14 +76,14 @@ typedef vector unsigned int vu32;
 
 // Direct rendering (32-bit) functions for ALTIVEC optimization:
 
-void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h)
+void r_dimpatchD_ALTIVEC(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
 	int x, y, i;
-	DWORD *line;
+	argb_t *line;
 	int invAlpha = 256 - alpha;
 
-	int dpitch = cvs->pitch / sizeof(DWORD);
-	line = (DWORD *)cvs->buffer + y1 * dpitch;
+	int dpitch = cvs->pitch / sizeof(argb_t);
+	line = (argb_t *)cvs->buffer + y1 * dpitch;
 
 	int batches = w / 4;
 	int remainder = w & 3;

@@ -123,14 +123,14 @@ byte gammatable[5][256] =
 };
 
 void BuildColoredLights (byte *maps, int lr, int lg, int lb, int fr, int fg, int fb);
-static void DoBlending (DWORD *from, DWORD *to, unsigned count, int tor, int tog, int tob, int toa);
+static void DoBlending (argb_t *from, argb_t *to, unsigned count, int tor, int tog, int tob, int toa);
 
 dyncolormap_t NormalLight;
 
 palette_t DefPal;
 palette_t *FirstPal;
 
-DWORD IndexedPalette[256];
+argb_t IndexedPalette[256];
 
 
 /* Current color blending values */
@@ -304,7 +304,7 @@ bool InternalCreatePalette (palette_t *palette, const char *name, byte *colors,
 
 	M_Free(palette->basecolors);
 
-	palette->basecolors = (DWORD *)Malloc (numcolors * 2 * sizeof(DWORD));
+	palette->basecolors = (argb_t *)Malloc (numcolors * 2 * sizeof(argb_t));
 	palette->colors = palette->basecolors + numcolors;
 	palette->numcolors = numcolors;
 
@@ -461,7 +461,7 @@ palette_t *FindPalette (char *name, unsigned flags)
 
 // This is based (loosely) on the ColorShiftPalette()
 // function from the dcolors.c file in the Doom utilities.
-static void DoBlending (DWORD *from, DWORD *to, unsigned count, int tor, int tog, int tob, int toa)
+static void DoBlending (argb_t *from, argb_t *to, unsigned count, int tor, int tog, int tob, int toa)
 {
 	unsigned i;
 
@@ -530,10 +530,10 @@ void BuildLightRamp (shademap_t &maps)
 
 void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps)
 {
-	DWORD l,c,r,g,b;
+	int l,c,r,g,b;
 	byte  *color;
-	DWORD *shade;
-	DWORD colors[256];
+	argb_t *shade;
+	argb_t colors[256];
 
 	r = newgamma[ RPART(level.fadeto) ];
 	g = newgamma[ GPART(level.fadeto) ];
@@ -580,9 +580,9 @@ void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps)
 
 void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
 {
-	DWORD l,c,r,g,b;
-	DWORD *shade;
-	DWORD colors[256];
+	int l,c,r,g,b;
+	argb_t *shade;
+	argb_t colors[256];
 
 	r = newgamma[ RPART(level.fadeto) ];
 	g = newgamma[ GPART(level.fadeto) ];
@@ -622,7 +622,7 @@ void RefreshPalette (palette_t *pal)
 		}
 		pal->colormapsbase = (byte *)Realloc (pal->colormapsbase, (NUMCOLORMAPS + 1) * 256 + 255);
 		pal->maps.colormap = (byte *)(((ptrdiff_t)(pal->colormapsbase) + 255) & ~0xff);
-		pal->maps.shademap = (DWORD *)Realloc (pal->maps.shademap, (NUMCOLORMAPS + 1)*256*sizeof(DWORD) + 255);
+		pal->maps.shademap = (argb_t *)Realloc (pal->maps.shademap, (NUMCOLORMAPS + 1)*256*sizeof(argb_t) + 255);
 
 		BuildDefaultColorAndShademap(pal, pal->maps);
 	}
@@ -847,7 +847,7 @@ void BuildColoredLights (const shademap_t *maps, int lr, int lg, int lb, int r, 
 {
 	unsigned int l,c;
 	byte	*color;
-	DWORD *shade;
+	argb_t  *shade;
 
 	// The default palette is assumed to contain the maps for white light.
 	if (!maps)
@@ -856,7 +856,7 @@ void BuildColoredLights (const shademap_t *maps, int lr, int lg, int lb, int r, 
 	// build normal (but colored) light mappings
 	for (l = 0; l < NUMCOLORMAPS; l++) {
 		// Write directly to the shademap for blending:
-		DWORD *colors = maps->shademap + (256 * l);
+		argb_t *colors = maps->shademap + (256 * l);
 		DoBlending (DefPal.basecolors, colors, DefPal.numcolors, r, g, b, l * (256 / NUMCOLORMAPS));
 
 		// Build the colormap and shademap:
@@ -898,8 +898,8 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 	shademap_t *maps = new shademap_t();
 	maps->colormap = (byte *)Z_Malloc (NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL, 0);
 	maps->colormap = (byte *)(((ptrdiff_t)maps->colormap + 255) & ~0xff);
-	maps->shademap = (DWORD *)Z_Malloc (NUMCOLORMAPS*256*sizeof(DWORD)+3+255, PU_LEVEL, 0);
-	maps->shademap = (DWORD *)(((ptrdiff_t)maps->shademap + 255) & ~0xff);
+	maps->shademap = (argb_t *)Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL, 0);
+	maps->shademap = (argb_t *)(((ptrdiff_t)maps->shademap + 255) & ~0xff);
 
 	colormap->maps = shaderef_t(maps, 0);
 	colormap->color = color;

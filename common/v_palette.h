@@ -36,8 +36,8 @@ struct palette_s {
 		char		name[8];
 		int			nameint[2];
 	} name;
-	DWORD			*colors;		// gamma corrected colors
-	DWORD			*basecolors;	// non-gamma corrected colors
+	argb_t			*colors;		// gamma corrected colors
+	argb_t			*basecolors;	// non-gamma corrected colors
 	unsigned		numcolors;
 	unsigned		flags;
 	unsigned		shadeshift;
@@ -78,11 +78,11 @@ typedef struct dyncolormap_s dyncolormap_t;
 
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 256
-DWORD alphablend1a(const DWORD from, const DWORD to, const int toa);
+argb_t alphablend1a(const argb_t from, const argb_t to, const int toa);
 // Alpha blend between two RGB colors with two alpha values
 // 0 <= froma <= 256
 // 0 <=   toa <= 256
-DWORD alphablend2a(const DWORD from, const int froma, const DWORD to, const int toa);
+argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa);
 
 // InitPalettes()
 //	input: name:  the name of the default palette lump

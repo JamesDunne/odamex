@@ -49,8 +49,8 @@ static int Currentr_wipetype;
 static short *wipeP_scr_start = NULL;
 static short *wipeP_scr_end = NULL;
 
-static DWORD *wipeD_scr_start = NULL;
-static DWORD *wipeD_scr_end = NULL;
+static argb_t *wipeD_scr_start = NULL;
+static argb_t *wipeD_scr_end = NULL;
 
 static int *y = NULL;
 
@@ -200,18 +200,18 @@ int wipeP_exitMelt (int ticks)
 
 // Direct (32bpp) version:
 
-void wipeD_shittyColMajorXform (DWORD *array)
+void wipeD_shittyColMajorXform (argb_t *array)
 {
 	int x, y;
-	DWORD *dest;
+	argb_t *dest;
 
-	dest = new DWORD[screen->width*screen->height];
+	dest = new argb_t[screen->width*screen->height];
 
 	for(y = 0; y < screen->height; y++)
 		for(x = 0; x < screen->width; x++)
 			dest[x*screen->height+y] = array[y*screen->width+x];
 
-	memcpy(array, dest, screen->width*screen->height*sizeof(DWORD));
+	memcpy(array, dest, screen->width*screen->height*sizeof(argb_t));
 
 	delete[] dest;
 }
@@ -250,11 +250,11 @@ int wipeD_doMelt (int ticks)
 	int 		dy;
 	int 		idx;
 
-	DWORD*		s;
-	DWORD*		d;
+	argb_t*		s;
+	argb_t*		d;
 	BOOL	 	done = true;
 
-	int pitch = screen->pitch / sizeof(DWORD);
+	int pitch = screen->pitch / sizeof(argb_t);
 
 	while (ticks--)
 	{
@@ -265,7 +265,7 @@ int wipeD_doMelt (int ticks)
 				y[i]++; done = false;
 
 				s = &wipeD_scr_start[i*screen->height];
-				d = &((DWORD *)screen->buffer)[i];
+				d = &((argb_t *)screen->buffer)[i];
 				idx = 0;
 
 				for (j=screen->height;j;j--)
@@ -281,7 +281,7 @@ int wipeD_doMelt (int ticks)
 				if (y[i]+dy >= screen->height)
 					dy = screen->height - y[i];
 				s = &wipeD_scr_end[i*screen->height+y[i]];
-				d = &((DWORD *)screen->buffer)[y[i]*(pitch)+i];
+				d = &((argb_t *)screen->buffer)[y[i]*(pitch)+i];
 				idx = 0;
 				for (j=dy;j;j--)
 				{
@@ -290,7 +290,7 @@ int wipeD_doMelt (int ticks)
 				}
 				y[i] += dy;
 				s = &wipeD_scr_start[i*screen->height];
-				d = &((DWORD *)screen->buffer)[y[i]*(pitch)+i];
+				d = &((argb_t *)screen->buffer)[y[i]*(pitch)+i];
 				idx = 0;
 				for (j=screen->height-y[i];j;j--)
 				{
@@ -605,12 +605,12 @@ int wipeD_doBurn (int ticks)
 		fixed_t xstep, ystep, firex, firey;
 		int x, y;
 		int to_pitch;
-		DWORD *to, *fromold, *fromnew;
+		argb_t *to, *fromold, *fromnew;
 
 		xstep = (FIREWIDTH * FRACUNIT) / screen->width;
 		ystep = (FIREHEIGHT * FRACUNIT) / screen->height;
-		to = (DWORD *)screen->buffer;
-		to_pitch = screen->pitch / sizeof(DWORD);
+		to = (argb_t *)screen->buffer;
+		to_pitch = screen->pitch / sizeof(argb_t);
 		fromold = wipeD_scr_start;
 		fromnew = wipeD_scr_end;
 		done = true;
@@ -760,10 +760,10 @@ int wipeD_doFade (int ticks)
 		int x, y;
 		int to_pitch;
 		int bglevel = 64 - fade;
-		DWORD *fromnew = wipeD_scr_end;
-		DWORD *fromold = wipeD_scr_start;
-		DWORD *to = (DWORD *)screen->buffer;
-		to_pitch = screen->pitch / sizeof(DWORD);
+		argb_t *fromnew = wipeD_scr_end;
+		argb_t *fromold = wipeD_scr_start;
+		argb_t *to = (argb_t *)screen->buffer;
+		to_pitch = screen->pitch / sizeof(argb_t);
 
 		for (y = 0; y < screen->height; y++)
 		{
@@ -818,7 +818,7 @@ int wipe_StartScreen (void)
         else
 		{
 			delete[] wipeD_scr_start;
-            wipeD_scr_start = new DWORD[screen->width * screen->height];
+            wipeD_scr_start = new argb_t[screen->width * screen->height];
 			screen->GetBlock (0, 0, screen->width, screen->height, (byte *)wipeD_scr_start);
 		}
 	}
@@ -839,7 +839,7 @@ int wipe_EndScreen (void)
         else
 		{
 			delete[] wipeD_scr_end;
-            wipeD_scr_end = new DWORD[screen->width * screen->height];
+            wipeD_scr_end = new argb_t[screen->width * screen->height];
 			screen->GetBlock (0, 0, screen->width, screen->height, (byte *)wipeD_scr_end);
 		}
 	}

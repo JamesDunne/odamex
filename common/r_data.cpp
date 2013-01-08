@@ -824,7 +824,7 @@ void R_InitColormaps (void)
 	}
 
 	realcolormaps.colormap = (byte *)Z_Malloc (256*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
-	realcolormaps.shademap = (DWORD *)Z_Malloc (256*sizeof(DWORD)*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
+	realcolormaps.shademap = (argb_t *)Z_Malloc (256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps,PU_STATIC,0);
 	fakecmaps = (FakeCmap *)Z_Malloc (sizeof(*fakecmaps) * numfakecmaps, PU_STATIC, 0);
 
 	fakecmaps[0].name[0] = 0;
@@ -845,7 +845,7 @@ void R_InitColormaps (void)
 				byte *map = (byte *)W_CacheLumpNum (i, PU_CACHE);
 
 				byte  *colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
-				DWORD *shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
+				argb_t *shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
 
 				// Copy colormap data:
 				memcpy (colormap, map, (NUMCOLORMAPS+1)*256);
@@ -868,7 +868,7 @@ void R_InitColormaps (void)
 					// Set up shademap for the colormap:
 					for (k = 0; k < 256; ++k)
 					{
-						DWORD c = pal->basecolors[map[0]];
+						argb_t c = pal->basecolors[map[0]];
 						shademap[k] = alphablend1a(c, MAKERGB(r,g,b), j * (256 / numfakecmaps));
 					}
 				}
@@ -1119,7 +1119,7 @@ BestColor
 (borrowed from Quake2 source: utils3/qdata/images.c)
 ===============
 */
-byte BestColor (const DWORD *palette, const int r, const int g, const int b, const int numcolors)
+byte BestColor (const argb_t *palette, const int r, const int g, const int b, const int numcolors)
 {
 	int		i;
 	int		dr, dg, db;
@@ -1151,7 +1151,7 @@ byte BestColor (const DWORD *palette, const int r, const int g, const int b, con
 	return bestcolor;
 }
 
-byte BestColor2 (const DWORD *palette, const DWORD color, const int numcolors)
+byte BestColor2 (const argb_t *palette, const argb_t color, const int numcolors)
 {
 	return BestColor(palette, RPART(color), GPART(color), BPART(color), numcolors);
 }

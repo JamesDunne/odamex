@@ -261,7 +261,7 @@ bool SDLVideo::SetMode (int width, int height, int bits, bool fs)
 }
 
 
-void SDLVideo::SetPalette (DWORD *palette)
+void SDLVideo::SetPalette (argb_t *palette)
 {
    for(size_t i = 0; i < sizeof(newPalette)/sizeof(SDL_Color); i++)
    {

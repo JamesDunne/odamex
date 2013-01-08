@@ -1848,7 +1848,7 @@ void R_DrawParticleP (vissprite_t *vis, int x1, int x2)
 
 void R_DrawParticleD (vissprite_t *vis, int x1, int x2)
 {
-	DWORD color = vis->colormap.shade(vis->startfrac);
+	argb_t color = vis->colormap.shade(vis->startfrac);
 	int yl = (centeryfrac - FixedMul(vis->texturemid, vis->xscale) + FRACUNIT - 1) >> FRACBITS;
 	int yh;
 	x1 = vis->x1;
@@ -1881,14 +1881,14 @@ void R_DrawParticleD (vissprite_t *vis, int x1, int x2)
 		int colsize = ds_colsize;
 		int spacing;
 		int pitch;
-		DWORD *dest;
+		argb_t *dest;
 
 		ycount = yh - yl;
 		if (ycount < 0)
 			return;
 		ycount++;
 
-		pitch = screen->pitch / sizeof(DWORD);
+		pitch = screen->pitch / sizeof(argb_t);
 
 		int fga, bga;
 		{
@@ -1901,7 +1901,7 @@ void R_DrawParticleD (vissprite_t *vis, int x1, int x2)
 		}
 
 		spacing = pitch - (countbase << detailxshift);
-		dest = (DWORD *)( ylookup[yl] + columnofs[x1] );
+		dest = (argb_t *)( ylookup[yl] + columnofs[x1] );
 
 		do
 		{

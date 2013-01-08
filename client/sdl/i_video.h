@@ -40,7 +40,7 @@ BOOL I_SetMode (int &width, int &height, int &bits);
 bool I_HardwareInitialized();
 
 // Takes full 8 bit values.
-void I_SetPalette (DWORD *palette);
+void I_SetPalette (argb_t *palette);
 
 /*
     12/3/06: Old Timey Palette method, used for red screen only as of

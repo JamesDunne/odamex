@@ -622,8 +622,8 @@ void F_DrawPatchColP (int x, const patch_t *patch, int col, const DCanvas *scrn)
 void F_DrawPatchColD (int x, const patch_t *patch, int col, const DCanvas *scrn)
 {
 	byte*		source;
-	DWORD*		dest;
-	DWORD*		desttop;
+	argb_t*		dest;
+	argb_t*		desttop;
 	unsigned	count;
 	int			repeat;
 	int			c;
@@ -631,7 +631,7 @@ void F_DrawPatchColD (int x, const patch_t *patch, int col, const DCanvas *scrn)
 	unsigned	invstep;
 	float		mul;
 	float		fx;
-	DWORD		p;
+	argb_t		p;
 	int			pitch;
 
 	// [RH] figure out how many times to repeat this column
@@ -650,8 +650,8 @@ void F_DrawPatchColD (int x, const patch_t *patch, int col, const DCanvas *scrn)
 	invstep = (scrn->height<<16) / 200;
 
 	tallpost_t *post = (tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
-	desttop = (DWORD *)scrn->buffer + x;
-	pitch = scrn->pitch / sizeof(DWORD);
+	desttop = (argb_t *)scrn->buffer + x;
+	pitch = scrn->pitch / sizeof(argb_t);
 
 	shaderef_t pal = shaderef_t(&DefaultPalette->maps, 0);
 

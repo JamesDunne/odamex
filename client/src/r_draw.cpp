@@ -103,7 +103,7 @@ void (*rt_tlatelucent2cols) (int hx, int sx, int yl, int yh);
 void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
 // Possibly vectorized functions:
-void (*r_dimpatchD)(const DCanvas *const cvs, DWORD color, int alpha, int x1, int y1, int w, int h);
+void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 //
 // R_DrawColumn
@@ -615,7 +615,7 @@ void R_DrawTranslucentColumnP (void)
 //
 translationref_t dc_translation;
 byte*	         translationtables;
-DWORD            translationRGB[MAXPLAYERS+1][16];
+argb_t           translationRGB[MAXPLAYERS+1][16];
 
 void R_DrawTranslatedColumnP (void)
 {
@@ -1068,7 +1068,7 @@ void R_DrawSlopeSpanIdealP_C(void)
 void R_DrawColumnD (void)
 {
 	int 		count;
-	DWORD*		dest;
+	argb_t*		dest;
 	fixed_t 	frac;
 	fixed_t 	fracstep;
 
@@ -1088,7 +1088,7 @@ void R_DrawColumnD (void)
 	}
 #endif
 
-	dest = (DWORD *)(ylookup[dc_yl] + columnofs[dc_x]);
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
 
 	fracstep = dc_iscale;
 	frac = dc_texturefrac;
@@ -1136,7 +1136,7 @@ void R_DrawColumnD (void)
 void R_DrawFuzzColumnD (void)
 {
 	int 		count;
-	DWORD*		dest;
+	argb_t*		dest;
 
 	// Adjust borders. Low...
 	if (!dc_yl)
@@ -1162,17 +1162,17 @@ void R_DrawFuzzColumnD (void)
 	}
 #endif
 
-	dest = (DWORD *)(ylookup[dc_yl] + columnofs[dc_x]);
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
 
 	// [RH] This is actually slightly brighter than
 	//		the indexed version, but it's close enough.
 	{
 		int fuzz = fuzzpos;
-		int pitch = dc_pitch / sizeof(DWORD);
+		int pitch = dc_pitch / sizeof(argb_t);
 
 		do
 		{
-			DWORD work = dest[fuzzoffset[fuzz]>>2];
+			argb_t work = dest[fuzzoffset[fuzz]>>2];
 			*dest = work - ((work >> 2) & 0x3f3f3f);
 
 			// Clamp table lookup index.
@@ -1188,7 +1188,7 @@ void R_DrawFuzzColumnD (void)
 void R_DrawTranslucentColumnD (void)
 {
 	int 		count;
-	DWORD*		dest;
+	argb_t*		dest;
 	fixed_t 	frac;
 	fixed_t 	fracstep;
 
@@ -1219,14 +1219,14 @@ void R_DrawTranslucentColumnD (void)
 		bga = bglevel >> 8;
 	}
 
-	dest = (DWORD *)(ylookup[dc_yl] + columnofs[dc_x]);
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
 
 	fracstep = dc_iscale;
 	frac = dc_texturefrac;
 
 	{
 		byte *source = dc_source;
-		int pitch = dc_pitch / sizeof(DWORD);
+		int pitch = dc_pitch / sizeof(argb_t);
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 
@@ -1243,8 +1243,8 @@ void R_DrawTranslucentColumnD (void)
 
 			do
 			{
-				DWORD fg = dc_colormap.shade(source[(frac>>FRACBITS)]);
-				DWORD bg = *dest;
+				argb_t fg = dc_colormap.shade(source[(frac>>FRACBITS)]);
+				argb_t bg = *dest;
 				*dest = alphablend2a(bg, bga, fg, fga);
 				dest += pitch;
 
@@ -1257,8 +1257,8 @@ void R_DrawTranslucentColumnD (void)
 			// texture height is a power-of-2
 			do
 			{
-				DWORD fg = dc_colormap.shade(source[(frac>>FRACBITS)&mask]);
-				DWORD bg = *dest;
+				argb_t fg = dc_colormap.shade(source[(frac>>FRACBITS)&mask]);
+				argb_t bg = *dest;
 				*dest = alphablend2a(bg, bga, fg, fga);
 				dest += pitch;
 
@@ -1271,7 +1271,7 @@ void R_DrawTranslucentColumnD (void)
 void R_DrawTranslatedColumnD (void)
 {
 	int 		count;
-	DWORD*		dest;
+	argb_t*		dest;
 	fixed_t 	frac;
 	fixed_t 	fracstep;
 
@@ -1292,7 +1292,7 @@ void R_DrawTranslatedColumnD (void)
 #endif
 
 
-	dest = (DWORD *)(ylookup[dc_yl] + columnofs[dc_x]);
+	dest = (argb_t *)(ylookup[dc_yl] + columnofs[dc_x]);
 
 	fracstep = dc_iscale;
 	frac = dc_texturefrac;
@@ -1300,7 +1300,7 @@ void R_DrawTranslatedColumnD (void)
 	// Here we do an additional index re-mapping.
 	{
 		byte *source = dc_source;
-		int pitch = dc_pitch / sizeof(DWORD);
+		int pitch = dc_pitch / sizeof(argb_t);
 		int texheight = dc_textureheight;
 		int mask = (texheight >> FRACBITS) - 1;
 
@@ -1346,7 +1346,7 @@ void R_DrawSpanD (void)
 	dsfixed_t			yfrac;
 	dsfixed_t			xstep;
 	dsfixed_t			ystep;
-	DWORD*       dest;
+	argb_t*             dest;
 	int 				count;
 	int 				spot;
 
@@ -1365,7 +1365,7 @@ void R_DrawSpanD (void)
 	xfrac = ds_xfrac;
 	yfrac = ds_yfrac;
 
-	dest = (DWORD *)(ylookup[ds_y] + columnofs[ds_x1]);
+	dest = (argb_t *)(ylookup[ds_y] + columnofs[ds_x1]);
 
 	// We do not check for zero spans here?
 	count = ds_x2 - ds_x1 + 1;
@@ -1410,7 +1410,7 @@ void R_DrawSlopeSpanD(void)
 	double id = ds_id, ids = ds_idstep;
 	
 	// framebuffer	
-	DWORD *dest = (DWORD *)( ylookup[ds_y] + columnofs[ds_x1] );
+	argb_t *dest = (argb_t *)( ylookup[ds_y] + columnofs[ds_x1] );
 	
 	// texture data
 	byte *src = (byte *)ds_source;

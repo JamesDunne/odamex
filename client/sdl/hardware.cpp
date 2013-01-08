@@ -543,14 +543,14 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 			else
 			{
 				// ARGB8888 -> ARGB8888
-				DWORD *destline, *srcline;
+				argb_t *destline, *srcline;
 
 				if (fracxstep == FRACUNIT)
 				{
 					for (y = desty; y < desty + destheight; y++, fracy += fracystep)
 					{
-						memcpy ((DWORD *)(dest->buffer + y * dest->pitch) + destx,
-								(DWORD *)(src->buffer + (fracy >> FRACBITS) * src->pitch) + srcx,
+						memcpy ((argb_t *)(dest->buffer + y * dest->pitch) + destx,
+								(argb_t *)(src->buffer + (fracy >> FRACBITS) * src->pitch) + srcx,
 								destwidth * (dest->bits / 8));
 					}
 				}
@@ -558,8 +558,8 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 				{
 					for (y = desty; y < desty + destheight; y++, fracy += fracystep)
 					{
-						srcline = (DWORD *)(src->buffer + (fracy >> FRACBITS) * src->pitch) + srcx;
-						destline = (DWORD *)(dest->buffer + y * dest->pitch) + destx;
+						srcline = (argb_t *)(src->buffer + (fracy >> FRACBITS) * src->pitch) + srcx;
+						destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
 						for (x = fracx = 0; x < destwidth; x++, fracx += fracxstep)
 						{
 							destline[x] = srcline[fracx >> FRACBITS];
@@ -576,7 +576,7 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 		else
 		{
 			// INDEX8 -> ARGB8888 (Palette set in V_Palette)
-			DWORD *destline;
+			argb_t *destline;
 			byte *srcline;
 
 			if (fracxstep == FRACUNIT)
@@ -585,7 +585,7 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 				for (y = desty; y < desty + destheight; y++, fracy += fracystep)
 				{
 					srcline = src->buffer + (fracy >> FRACBITS) * src->pitch + srcx;
-					destline = (DWORD *)(dest->buffer + y * dest->pitch) + destx;
+					destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
 					for (x = 0; x < destwidth; x++)
 					{
 						destline[x] = V_Palette.shade(srcline[x]);
@@ -598,7 +598,7 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 				for (y = desty; y < desty + destheight; y++, fracy += fracystep)
 				{
 					srcline = src->buffer + (fracy >> FRACBITS) * src->pitch + srcx;
-					destline = (DWORD *)(dest->buffer + y * dest->pitch) + destx;
+					destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
 					for (x = fracx = 0; x < destwidth; x++, fracx += fracxstep)
 					{
 						destline[x] = V_Palette.shade(srcline[fracx >> FRACBITS]);
@@ -627,7 +627,7 @@ bool IVideo::CanBlit () { return true; }
 bool IVideo::SetOverscan (float scale) { return true; }
 
 bool IVideo::SetMode (int width, int height, int bits, bool fs) { return true; }
-void IVideo::SetPalette (DWORD *palette) {}
+void IVideo::SetPalette (argb_t *palette) {}
 
 void IVideo::SetOldPalette (byte *doompalette) {}
 void IVideo::UpdateScreen (DCanvas *canvas) {}

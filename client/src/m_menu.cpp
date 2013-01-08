@@ -1326,7 +1326,7 @@ static forceinline byte R_FirePixel<byte>(const byte c)
 }
 
 template<>
-static forceinline DWORD R_FirePixel<DWORD>(const byte c)
+static forceinline argb_t R_FirePixel<argb_t>(const byte c)
 {
 	return MAKERGB(c, 0, 0);
 }

@@ -211,9 +211,9 @@ inline const byte shaderef_t::ramp() const
 	return m_colors->ramp[index];
 }
 
-extern DWORD translationRGB[MAXPLAYERS+1][16];
+extern argb_t translationRGB[MAXPLAYERS+1][16];
 
-inline DWORD shaderef_t::tlate(const translationref_t &translation, const byte c) const
+inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte c) const
 {
 	int pid = translation.getPlayerID();
 
@@ -227,8 +227,8 @@ inline DWORD shaderef_t::tlate(const translationref_t &translation, const byte c
 
 	// Find the shading for the custom player colors:
 	byte a = 255 - ramp();
-	DWORD t = translationRGB[pid][c - 0x70];
-	DWORD s = MAKERGB(
+	argb_t t = translationRGB[pid][c - 0x70];
+	argb_t s = MAKERGB(
 		RPART(t) * a / 255,
 		GPART(t) * a / 255,
 		BPART(t) * a / 255

@@ -60,8 +60,8 @@ int CL_GetPlayerColor(player_t*);
 
 // Group palette index and RGB value together:
 typedef struct am_color_s {
-	byte	index;
-	DWORD	rgb;
+	palindex_t  index;
+	argb_t      rgb;
 } am_color_t;
 
 static am_color_t
@@ -184,7 +184,7 @@ EXTERN_CVAR		(screenblocks)
 #define CYMTOF(y)  (f_h - MTOF((y)-m_y)/* + f_y*/)
 
 #define PUTDOTP(xx,yy,cc) fb[(yy)*f_p+(xx)]=(cc)
-#define PUTDOTD(xx,yy,cc) *((DWORD *)(fb+(yy)*f_p+((xx)<<2)))=(cc)
+#define PUTDOTD(xx,yy,cc) *((argb_t *)(fb+(yy)*f_p+((xx)<<2)))=(cc)
 
 typedef struct {
 	int x, y;
@@ -537,15 +537,15 @@ void AM_initVariables(void)
 }
 
 
-am_color_t AM_GetColorFromString(DWORD *palette, const char *colorstring)
+am_color_t AM_GetColorFromString(argb_t *palette, const char *colorstring)
 {
 	am_color_t c;
-	c.rgb = (DWORD) V_GetColorFromString(NULL, colorstring);
+	c.rgb = (argb_t) V_GetColorFromString(NULL, colorstring);
 	c.index = BestColor2(palette, c.rgb, 256);
 	return c;
 }
 
-am_color_t AM_BestColor(DWORD *palette, const int r, const int g, const int b, const int numcolors)
+am_color_t AM_BestColor(argb_t *palette, const int r, const int g, const int b, const int numcolors)
 {
 	am_color_t c;
 	c.rgb = MAKERGB(r,g,b);
@@ -556,7 +556,7 @@ am_color_t AM_BestColor(DWORD *palette, const int r, const int g, const int b, c
 void AM_initColors (BOOL overlayed)
 {
 	// Look up the colors in the current palette:
-	DWORD *palette = DefaultPalette->colors;
+	argb_t *palette = DefaultPalette->colors;
 
 	if (overlayed && !am_ovshare)
 	{
@@ -592,7 +592,7 @@ void AM_initColors (BOOL overlayed)
 		ExitColor = AM_GetColorFromString(palette, am_exitcolor.cstring());
 		TeleportColor = AM_GetColorFromString(palette, am_teleportcolor.cstring());
 		{
-			unsigned int ba = AM_GetColorFromString(palette, am_backcolor.cstring()).rgb;
+			argb_t ba = AM_GetColorFromString(palette, am_backcolor.cstring()).rgb;
 			int r = RPART(ba) - 16;
 			int g = GPART(ba) - 16;
 			int b = BPART(ba) - 16;
@@ -966,9 +966,9 @@ void AM_clearFB (am_color_t color)
 				memset (fb + y * f_p, color.index, f_w);
 	} else {
 		int x;
-		DWORD *line;
+		argb_t *line;
 
-		line = (DWORD *)(fb);
+		line = (argb_t *)(fb);
 		for (y = 0; y < f_h; y++) {
 			for (x = 0; x < f_w; x++) {
 				line[x] = color.rgb;
@@ -1169,7 +1169,7 @@ void AM_drawFlineP (fline_t* fl, byte color)
 
 // Direct (32bpp) version:
 
-void AM_drawFlineD(fline_t* fl, DWORD color)
+void AM_drawFlineD(fline_t* fl, argb_t color)
 {
 	register int x;
 	register int y;
@@ -1503,7 +1503,7 @@ void AM_drawPlayers(void)
 	angle_t angle;
 	size_t i;
 	player_t &conplayer = displayplayer();
-	DWORD *palette;
+	argb_t *palette;
 	palette = DefaultPalette->colors;
 
 	if (!multiplayer)
@@ -1551,7 +1551,7 @@ void AM_drawPlayers(void)
 			}
 		} else {
 			int playercolor = CL_GetPlayerColor(p);
-			color.rgb = (DWORD)playercolor;
+			color.rgb = (argb_t)playercolor;
 			color.index = BestColor (DefaultPalette->basecolors,
 			                         RPART(playercolor),
 			                         GPART(playercolor),

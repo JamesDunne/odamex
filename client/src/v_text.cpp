@@ -79,12 +79,12 @@ void V_InitConChars (byte transcolor)
 		temp.Lock ();
 
 		{
-			DWORD *scrn, fill;
+			argb_t *scrn, fill;
 
 			fill = (transcolor << 24) | (transcolor << 16) | (transcolor << 8) | transcolor;
 			for (y = 0; y < 128; y++)
 			{
-				scrn = (DWORD *)(temp.buffer + temp.pitch * y);
+				scrn = (argb_t *)(temp.buffer + temp.pitch * y);
 				for (x = 0; x < 128/4; x++)
 				{
 					*scrn++ = fill;
@@ -148,7 +148,7 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 {
 	const byte *str = (const byte *)s;
 	byte *temp;
-	DWORD *charimg;
+	argb_t *charimg;
 
 	if (!buffer)
 		return;
@@ -187,13 +187,13 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 	        continue;
 	    }
 
-		charimg = (DWORD *)&ConChars[(*str) * 128];
+		charimg = (argb_t *)&ConChars[(*str) * 128];
 		if (is8bit())
 		{
 			int z;
-			DWORD *writepos;
+			argb_t *writepos;
 
-			writepos = (DWORD *)(temp + x);
+			writepos = (argb_t *)(temp + x);
 			for (z = 0; z < 8; z++)
 			{
 				*writepos = (*writepos & charimg[2]) ^ charimg[0];
@@ -206,9 +206,9 @@ void DCanvas::PrintStr (int x, int y, const char *s, int count) const
 		else
 		{
 			int z;
-			int *writepos;
+			argb_t *writepos;
 
-			writepos = (int *)(temp + (x << 2));
+			writepos = (argb_t *)(temp + (x << 2));
 			for (z = 0; z < 8; z++)
 			{
 #define BYTEIMG ((byte *)charimg)
@@ -245,7 +245,7 @@ void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
 {
 	const byte *str = (const byte *)s;
 	byte *temp;
-	DWORD *charimg;
+	argb_t *charimg;
 
 	if (y > (height - 16))
 		return;
@@ -281,7 +281,7 @@ void DCanvas::PrintStr2 (int x, int y, const char *s, int count) const
 	        continue;
 	    }
 
-		charimg = (DWORD *)&ConChars[(*str) * 128];
+		charimg = (argb_t *)&ConChars[(*str) * 128];
 
 		{
 			int z;

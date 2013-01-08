@@ -41,7 +41,7 @@ class IVideo
 	virtual bool SetOverscan (float scale);
 
 	virtual bool SetMode (int width, int height, int bits, bool fs);
-	virtual void SetPalette (DWORD *palette);
+	virtual void SetPalette (argb_t *palette);
 	
 	/* 12/3/06: HACK - Add SetOldPalette to accomodate classic redscreen - ML*/
 	virtual void SetOldPalette (byte *doompalette);
