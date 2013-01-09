@@ -103,6 +103,8 @@ void (*rt_tlatelucent2cols) (int hx, int sx, int yl, int yh);
 void (*rt_tlatelucent4cols) (int sx, int yl, int yh);
 
 // Possibly vectorized functions:
+void (*R_DrawSpanD)(void);
+void (*R_DrawSlopeSpanD)(void);
 void (*r_dimpatchD)(const DCanvas *const cvs, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 //
@@ -420,7 +422,6 @@ void R_DrawFuzzColumnP (void)
 				 dc_yl, dc_yh, dc_x);
 	}
 #endif
-
 
 	dest = ylookup[dc_yl] + columnofs[dc_x];
 
@@ -898,8 +899,6 @@ void R_FillSpan (void)
 //
 // Based on R_DrawSlope_8_64 from Eternity Engine, written by SoM/Quasar
 //
-#define SPANJUMP 16
-#define INTERPSTEP (0.0625f)
 
 void R_DrawSlopeSpanP(void)
 {
@@ -1335,220 +1334,6 @@ void R_DrawTranslatedColumnD (void)
 			} while (--count);
 		}
 	}
-}
-
-
-
-void R_DrawSpanD (void)
-{
-	dsfixed_t			xfrac;
-	dsfixed_t			yfrac;
-	dsfixed_t			xstep;
-	dsfixed_t			ystep;
-	argb_t*             dest;
-	int 				count;
-	int 				spot;
-
-#ifdef RANGECHECK
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
-	{
-		I_Error ("R_DrawSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
-	}
-//		dscount++;
-#endif
-
-	xfrac = ds_xfrac;
-	yfrac = ds_yfrac;
-
-	dest = (argb_t *)(ylookup[ds_y] + columnofs[ds_x1]);
-
-	// We do not check for zero spans here?
-	count = ds_x2 - ds_x1 + 1;
-
-	xstep = ds_xstep;
-	ystep = ds_ystep;
-
-#if 1
-	assert(ds_colsize == 1);
-
-	// Blit until we align ourselves with a 16-byte offset for SSE2:
-	while (((size_t)dest) & 15)
-	{
-		// Current texture index in u,v.
-		spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
-
-		// Lookup pixel from flat texture tile,
-		//  re-index using light/colormap.
-		*dest = ds_colormap.shade(ds_source[spot]);
-		dest += ds_colsize;
-
-		// Next step in u,v.
-		xfrac += xstep;
-		yfrac += ystep;
-
-		--count;
-	}
-
-	const int rounds = count / 4;
-	if (rounds > 0)
-	{
-		// SSE2 optimized and aligned stores for quicker memory writes:
-		for (int i = 0; i < rounds; ++i, count -= 4)
-		{
-			// TODO(jsd): Consider SSE2 bit twiddling here!
-			const int spot0 = (((yfrac+ystep*0)>>(32-6-6))&(63*64)) + ((xfrac+xstep*0)>>(32-6));
-			const int spot1 = (((yfrac+ystep*1)>>(32-6-6))&(63*64)) + ((xfrac+xstep*1)>>(32-6));
-			const int spot2 = (((yfrac+ystep*2)>>(32-6-6))&(63*64)) + ((xfrac+xstep*2)>>(32-6));
-			const int spot3 = (((yfrac+ystep*3)>>(32-6-6))&(63*64)) + ((xfrac+xstep*3)>>(32-6));
-
-			const __m128i finalColors = _mm_setr_epi32(
-				ds_colormap.shade(ds_source[spot0]),
-				ds_colormap.shade(ds_source[spot1]),
-				ds_colormap.shade(ds_source[spot2]),
-				ds_colormap.shade(ds_source[spot3])
-			);
-			_mm_store_si128((__m128i *)dest, finalColors);
-			dest += 4;
-
-			// Next step in u,v.
-			xfrac += xstep*4;
-			yfrac += ystep*4;
-		}
-
-		// Blit the last remainder:
-		while (count--)
-		{
-			// Current texture index in u,v.
-			spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
-
-			// Lookup pixel from flat texture tile,
-			//  re-index using light/colormap.
-			*dest = ds_colormap.shade(ds_source[spot]);
-			dest += ds_colsize;
-
-			// Next step in u,v.
-			xfrac += xstep;
-			yfrac += ystep;
-		}
-	}
-#else
-	do {
-		// Current texture index in u,v.
-		spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
-
-		// Lookup pixel from flat texture tile,
-		//  re-index using light/colormap.
-		*dest = ds_colormap.shade(ds_source[spot]);
-		dest += ds_colsize;
-
-		// Next step in u,v.
-		xfrac += xstep;
-		yfrac += ystep;
-	} while (--count);
-#endif
-}
-
-void R_DrawSlopeSpanD(void)
-{
-	int count = ds_x2 - ds_x1 + 1;
-	if (count <= 0)
-		return;
-
-#ifdef RANGECHECK 
-	if (ds_x2 < ds_x1
-		|| ds_x1<0
-		|| ds_x2>=screen->width
-		|| ds_y>screen->height)
-	{
-		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
-				 ds_x1,ds_x2,ds_y);
-	}
-#endif
-
-	double iu = ds_iu, iv = ds_iv;
-	double ius = ds_iustep, ivs = ds_ivstep;
-	double id = ds_id, ids = ds_idstep;
-	
-	// framebuffer	
-	argb_t *dest = (argb_t *)( ylookup[ds_y] + columnofs[ds_x1] );
-	
-	// texture data
-	byte *src = (byte *)ds_source;
-
-	int colsize = ds_colsize;
-	shaderef_t colormap;
-	int ltindex = 0;		// index into the lighting table
-
-   while(count >= SPANJUMP)
-   {
-      double ustart, uend;
-      double vstart, vend;
-      double mulstart, mulend;
-      unsigned int ustep, vstep, ufrac, vfrac;
-      int incount;
-
-      mulstart = 65536.0f / id;
-      id += ids * SPANJUMP;
-      mulend = 65536.0f / id;
-
-      ufrac = (int)(ustart = iu * mulstart);
-      vfrac = (int)(vstart = iv * mulstart);
-      iu += ius * SPANJUMP;
-      iv += ivs * SPANJUMP;
-      uend = iu * mulend;
-      vend = iv * mulend;
-
-      ustep = (int)((uend - ustart) * INTERPSTEP);
-      vstep = (int)((vend - vstart) * INTERPSTEP);
-
-      incount = SPANJUMP;
-      while(incount--)
-      {
-         colormap = slopelighting[ltindex++];
-         *dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
-         dest += colsize;
-         ufrac += ustep;
-         vfrac += vstep;
-      }
-
-      count -= SPANJUMP;
-   }
-   if (count > 0)
-   {
-      double ustart, uend;
-      double vstart, vend;
-      double mulstart, mulend;
-      unsigned int ustep, vstep, ufrac, vfrac;
-      int incount;
-
-      mulstart = 65536.0f / id;
-      id += ids * count;
-      mulend = 65536.0f / id;
-
-      ufrac = (int)(ustart = iu * mulstart);
-      vfrac = (int)(vstart = iv * mulstart);
-      iu += ius * count;
-      iv += ivs * count;
-      uend = iu * mulend;
-      vend = iv * mulend;
-
-      ustep = (int)((uend - ustart) / count);
-      vstep = (int)((vend - vstart) / count);
-
-      incount = count;
-      while(incount--)
-      {
-         colormap = slopelighting[ltindex++];
-         *dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
-         dest += colsize;
-         ufrac += ustep;
-         vfrac += vstep;
-      }
-   }
 }
 
 /****************************************************/
@@ -2067,6 +1852,8 @@ void R_InitDrawers ()
 #ifdef __SSE2__
 		rtv_lucent4colsP        = rtv_lucent4cols_SSE2;
 		rtv_lucent4colsD        = rtv_lucent4cols_SSE2;
+		R_DrawSpanD				= R_DrawSpanD_SSE2;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_SSE2;
 		r_dimpatchD             = r_dimpatchD_SSE2;
 #else
 		// No SSE2 support compiled in.
@@ -2079,6 +1866,8 @@ void R_InitDrawers ()
 #ifdef __MMX__
 		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
 		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
+		R_DrawSpanD				= R_DrawSpanD_MMX;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_MMX;
 		r_dimpatchD             = r_dimpatchD_MMX;
 #else
 		// No MMX support compiled in.
@@ -2091,6 +1880,8 @@ void R_InitDrawers ()
 #ifdef __ALTIVEC__
 		rtv_lucent4colsP        = rtv_lucent4cols_ALTIVEC;
 		rtv_lucent4colsD        = rtv_lucent4cols_ALTIVEC;
+		R_DrawSpanD				= R_DrawSpanD_ALTIVEC;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_ALTIVEC;
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 #else
 		// No ALTIVEC support compiled in.
@@ -2104,12 +1895,16 @@ void R_InitDrawers ()
 setNone:
 		rtv_lucent4colsP        = rtv_lucent4cols_c;
 		rtv_lucent4colsD        = rtv_lucent4cols_c;
+		R_DrawSpanD				= R_DrawSpanD_c;
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;
 		r_dimpatchD             = r_dimpatchD_c;
 	}
 
 	// Check that all pointers are definitely assigned!
 	assert(rtv_lucent4colsP != NULL);
 	assert(rtv_lucent4colsD != NULL);
+	assert(R_DrawSpanD != NULL);
+	assert(R_DrawSlopeSpanD != NULL);
 	assert(r_dimpatchD != NULL);
 }
 

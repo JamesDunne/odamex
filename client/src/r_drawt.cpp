@@ -26,11 +26,13 @@
 //-----------------------------------------------------------------------------
 
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "doomtype.h"
 #include "doomdef.h"
+#include "i_system.h"
 #include "r_defs.h"
 #include "r_draw.h"
 #include "r_main.h"
@@ -600,6 +602,154 @@ void rt_tlatelucent4colsD (int sx, int yl, int yh)
 	rt_tlatelucentcols<argb_t, 4>(0, sx, yl, yh);
 }
 
+
+void R_DrawSpanD_c (void)
+{
+	dsfixed_t			xfrac;
+	dsfixed_t			yfrac;
+	dsfixed_t			xstep;
+	dsfixed_t			ystep;
+	argb_t*             dest;
+	int 				count;
+	int 				spot;
+
+#ifdef RANGECHECK
+	if (ds_x2 < ds_x1
+		|| ds_x1<0
+		|| ds_x2>=screen->width
+		|| ds_y>screen->height)
+	{
+		I_Error ("R_DrawSpan: %i to %i at %i",
+				 ds_x1,ds_x2,ds_y);
+	}
+//		dscount++;
+#endif
+
+	xfrac = ds_xfrac;
+	yfrac = ds_yfrac;
+
+	dest = (argb_t *)(ylookup[ds_y] + columnofs[ds_x1]);
+
+	// We do not check for zero spans here?
+	count = ds_x2 - ds_x1 + 1;
+
+	xstep = ds_xstep;
+	ystep = ds_ystep;
+
+	do {
+		// Current texture index in u,v.
+		spot = ((yfrac>>(32-6-6))&(63*64)) + (xfrac>>(32-6));
+
+		// Lookup pixel from flat texture tile,
+		//  re-index using light/colormap.
+		*dest = ds_colormap.shade(ds_source[spot]);
+		dest += ds_colsize;
+
+		// Next step in u,v.
+		xfrac += xstep;
+		yfrac += ystep;
+	} while (--count);
+}
+
+
+void R_DrawSlopeSpanD_c (void)
+{
+	int count = ds_x2 - ds_x1 + 1;
+	if (count <= 0)
+		return;
+
+#ifdef RANGECHECK 
+	if (ds_x2 < ds_x1
+		|| ds_x1<0
+		|| ds_x2>=screen->width
+		|| ds_y>screen->height)
+	{
+		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
+					ds_x1,ds_x2,ds_y);
+	}
+#endif
+
+	double iu = ds_iu, iv = ds_iv;
+	double ius = ds_iustep, ivs = ds_ivstep;
+	double id = ds_id, ids = ds_idstep;
+	
+	// framebuffer	
+	argb_t *dest = (argb_t *)( ylookup[ds_y] + columnofs[ds_x1] );
+	
+	// texture data
+	byte *src = (byte *)ds_source;
+
+	int colsize = ds_colsize;
+	shaderef_t colormap;
+	int ltindex = 0;		// index into the lighting table
+
+	while(count >= SPANJUMP)
+	{
+		double ustart, uend;
+		double vstart, vend;
+		double mulstart, mulend;
+		unsigned int ustep, vstep, ufrac, vfrac;
+		int incount;
+
+		mulstart = 65536.0f / id;
+		id += ids * SPANJUMP;
+		mulend = 65536.0f / id;
+
+		ufrac = (int)(ustart = iu * mulstart);
+		vfrac = (int)(vstart = iv * mulstart);
+		iu += ius * SPANJUMP;
+		iv += ivs * SPANJUMP;
+		uend = iu * mulend;
+		vend = iv * mulend;
+
+		ustep = (int)((uend - ustart) * INTERPSTEP);
+		vstep = (int)((vend - vstart) * INTERPSTEP);
+
+		incount = SPANJUMP;
+		while(incount--)
+		{
+			colormap = slopelighting[ltindex++];
+			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+			dest += colsize;
+			ufrac += ustep;
+			vfrac += vstep;
+		}
+
+		count -= SPANJUMP;
+	}
+	if (count > 0)
+	{
+		double ustart, uend;
+		double vstart, vend;
+		double mulstart, mulend;
+		unsigned int ustep, vstep, ufrac, vfrac;
+		int incount;
+
+		mulstart = 65536.0f / id;
+		id += ids * count;
+		mulend = 65536.0f / id;
+
+		ufrac = (int)(ustart = iu * mulstart);
+		vfrac = (int)(vstart = iv * mulstart);
+		iu += ius * count;
+		iv += ivs * count;
+		uend = iu * mulend;
+		vend = iv * mulend;
+
+		ustep = (int)((uend - ustart) / count);
+		vstep = (int)((vend - vstart) / count);
+
+		incount = count;
+		while(incount--)
+		{
+			colormap = slopelighting[ltindex++];
+			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
+			dest += colsize;
+			ufrac += ustep;
+			vfrac += vstep;
+		}
+	}
+}
 
 // Functions for v_video.cpp support
 
