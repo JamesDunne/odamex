@@ -28,6 +28,10 @@ None
 
 Fixed Issues
 ------------
+ * Span rendering in 32bpp is now vector accelerated (SSE2, MMX)
+ * Translucent walls in 32bpp are now vector accelerated (SSE2, MMX)
+ * Fixed alphablending code in 32bpp
+ * Fixed regression with underwater areas i.e. custom colormaps
  * Now rendering true 32bpp colors for player in player setup menu in 32bpp mode
  * Gamma not being maintained between map changes
  * 32bpp player color translation

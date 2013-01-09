@@ -1866,8 +1866,8 @@ void R_InitDrawers ()
 #ifdef __MMX__
 		rtv_lucent4colsP        = rtv_lucent4cols_MMX;
 		rtv_lucent4colsD        = rtv_lucent4cols_MMX;
-		R_DrawSpanD				= R_DrawSpanD_MMX;
-		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_MMX;
+		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
 		r_dimpatchD             = r_dimpatchD_MMX;
 #else
 		// No MMX support compiled in.
@@ -1880,8 +1880,8 @@ void R_InitDrawers ()
 #ifdef __ALTIVEC__
 		rtv_lucent4colsP        = rtv_lucent4cols_ALTIVEC;
 		rtv_lucent4colsD        = rtv_lucent4cols_ALTIVEC;
-		R_DrawSpanD				= R_DrawSpanD_ALTIVEC;
-		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_ALTIVEC;
+		R_DrawSpanD				= R_DrawSpanD_c;		// TODO
+		R_DrawSlopeSpanD		= R_DrawSlopeSpanD_c;	// TODO
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 #else
 		// No ALTIVEC support compiled in.

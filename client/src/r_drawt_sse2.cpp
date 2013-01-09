@@ -256,10 +256,11 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	// texture data
 	byte *src = (byte *)ds_source;
 
+	assert (ds_colsize == 1);
 	int colsize = ds_colsize;
-	shaderef_t colormap;
 	int ltindex = 0;		// index into the lighting table
 
+	// Blit the bulk in batches of SPANJUMP columns:
 	while (count >= SPANJUMP)
 	{
 		double ustart, uend;
@@ -283,17 +284,66 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		vstep = (int)((vend - vstart) * INTERPSTEP);
 
 		incount = SPANJUMP;
-		while(incount--)
+
+		// Blit up to the first 16-byte aligned position:
+		while ((((size_t)dest) & 15) && (incount > 0))
 		{
-			colormap = slopelighting[ltindex++];
+			const shaderef_t &colormap = slopelighting[ltindex++];
 			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
 			dest += colsize;
 			ufrac += ustep;
 			vfrac += vstep;
+			incount--;
+		}
+
+		if (incount > 0)
+		{
+			const int rounds = incount / 4;
+			if (rounds > 0)
+			{
+				for (int i = 0; i < rounds; ++i, incount -= 4)
+				{
+					const int spot0 = (((vfrac+vstep*0) >> 10) & 0xFC0) | (((ufrac+ustep*0) >> 16) & 63);
+					const int spot1 = (((vfrac+vstep*1) >> 10) & 0xFC0) | (((ufrac+ustep*1) >> 16) & 63);
+					const int spot2 = (((vfrac+vstep*2) >> 10) & 0xFC0) | (((ufrac+ustep*2) >> 16) & 63);
+					const int spot3 = (((vfrac+vstep*3) >> 10) & 0xFC0) | (((ufrac+ustep*3) >> 16) & 63);
+
+					const __m128i finalColors = _mm_setr_epi32(
+						slopelighting[ltindex+0].shade(src[spot0]),
+						slopelighting[ltindex+1].shade(src[spot1]),
+						slopelighting[ltindex+2].shade(src[spot2]),
+						slopelighting[ltindex+3].shade(src[spot3])
+					);
+					_mm_store_si128((__m128i *)dest, finalColors);
+
+					dest += 4;
+					ltindex += 4;
+
+					ufrac += ustep * 4;
+					vfrac += vstep * 4;
+				}
+			}
+		}
+
+		if (incount > 0)
+		{
+			while(incount--)
+			{
+				const shaderef_t &colormap = slopelighting[ltindex++];
+				const int spot = ((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63);
+				*dest = colormap.shade(src[spot]);
+				dest += colsize;
+
+				ufrac += ustep;
+				vfrac += vstep;
+			}
 		}
 
 		count -= SPANJUMP;
 	}
+
+	// Remainder:
+	assert(count < SPANJUMP);
 	if (count > 0)
 	{
 		double ustart, uend;
@@ -319,7 +369,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		incount = count;
 		while (incount--)
 		{
-			colormap = slopelighting[ltindex++];
+			const shaderef_t &colormap = slopelighting[ltindex++];
 			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
 			dest += colsize;
 			ufrac += ustep;
