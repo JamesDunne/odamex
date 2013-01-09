@@ -284,12 +284,42 @@ static forceinline void rt_mapcols(int hx, int sx, int yl, int yh)
 
 	do
 	{
+#ifdef __SSE2__
+		if ((columns == 4) && (sizeof(pixel_t) == 4))
+		{
+			_mm_storeu_si128((__m128i *)dest, _mm_setr_epi32(
+				rt_mapcolor<pixel_t>(dc_colormap, source[0]),
+				rt_mapcolor<pixel_t>(dc_colormap, source[1]),
+				rt_mapcolor<pixel_t>(dc_colormap, source[2]),
+				rt_mapcolor<pixel_t>(dc_colormap, source[3])
+			));
+			dest += pitch;
+			_mm_storeu_si128((__m128i *)dest, _mm_setr_epi32(
+				rt_mapcolor<pixel_t>(dc_colormap, source[4]),
+				rt_mapcolor<pixel_t>(dc_colormap, source[5]),
+				rt_mapcolor<pixel_t>(dc_colormap, source[6]),
+				rt_mapcolor<pixel_t>(dc_colormap, source[7])
+			));
+			dest += pitch;
+			source += 8;
+		}
+		else
+		{
+			for (int i = 0; i < columns; ++i)
+				dest[pitch*0+i] = rt_mapcolor<pixel_t>(dc_colormap, source[0+i]);
+			for (int i = 0; i < columns; ++i)
+				dest[pitch*1+i] = rt_mapcolor<pixel_t>(dc_colormap, source[4+i]);
+			source += 8;
+			dest += pitch*2;
+		}
+#else
 		for (int i = 0; i < columns; ++i)
 			dest[pitch*0+i] = rt_mapcolor<pixel_t>(dc_colormap, source[0+i]);
 		for (int i = 0; i < columns; ++i)
 			dest[pitch*1+i] = rt_mapcolor<pixel_t>(dc_colormap, source[4+i]);
 		source += 8;
 		dest += pitch*2;
+#endif
 	} while (--count);
 }
 

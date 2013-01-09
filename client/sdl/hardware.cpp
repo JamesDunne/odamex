@@ -586,10 +586,37 @@ void I_Blit (DCanvas *src, int srcx, int srcy, int srcwidth, int srcheight,
 				{
 					srcline = src->buffer + (fracy >> FRACBITS) * src->pitch + srcx;
 					destline = (argb_t *)(dest->buffer + y * dest->pitch) + destx;
+#if 1
+					argb_t *dest = destline;
+					x = 0;
+					while (((size_t)dest & 15) && (x < destwidth))
+					{
+						*dest++ = V_Palette.shade(srcline[x++]);
+					}
+					const int rounds = (destwidth - x) / 4;
+					if (rounds > 0)
+					{
+						for (int i = 0; i < rounds; ++i, x += 4)
+						{
+							_mm_store_si128((__m128i *)dest, _mm_setr_epi32(
+								V_Palette.shade(srcline[x+0]),
+								V_Palette.shade(srcline[x+1]),
+								V_Palette.shade(srcline[x+2]),
+								V_Palette.shade(srcline[x+3])
+							));
+							dest += 4;
+						}
+					}
+					for (; x < destwidth; x++)
+					{
+						*dest++ = V_Palette.shade(srcline[x]);
+					}
+#else
 					for (x = 0; x < destwidth; x++)
 					{
 						destline[x] = V_Palette.shade(srcline[x]);
 					}
+#endif
 				}
 			}
 			else
