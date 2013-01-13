@@ -222,6 +222,10 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	if (pid == -1)
 		return shade(translation.tlate(c));
 
+	// Special effect:
+	if (m_mapnum >= NUMCOLORMAPS)
+		return shade(translation.tlate(c));
+
 	// Is a player color translation, but not a player color index:
 	if (!(c >= 0x70 && c < 0x80))
 		return shade(c);

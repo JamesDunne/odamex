@@ -24,7 +24,9 @@ Planned Changes
 
 Fixed Issues
 ------------
- * Gamma-corrected invulnerability
+ * Invulnerability does not reveal player colors in 32bpp
+ * Gamma-corrected status alpha-blending in 32bpp
+ * Gamma-corrected invulnerability in 32bpp
  * Gamma level is maintained across client restarts
  * Player colors are properly lit in 32bpp
  * Player colors are properly colored under colored lighting in 32bpp
