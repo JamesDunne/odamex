@@ -1356,7 +1356,7 @@ void R_RenderPlayerView (player_t *player)
 	// NOTE(jsd): Full-screen status color blending:
 	extern int BlendA, BlendR, BlendG, BlendB;
 	if (BlendA != 0)
-		r_dimpatchD(screen, MAKERGB(BlendR, BlendG, BlendB), BlendA, 0, 0, screen->width, screen->height);
+		r_dimpatchD(screen, MAKERGB(newgamma[BlendR], newgamma[BlendG], newgamma[BlendB]), BlendA, 0, 0, screen->width, screen->height);
 }
 
 //
