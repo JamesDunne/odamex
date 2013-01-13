@@ -505,7 +505,7 @@ void BuildDefaultColorAndShademap (palette_t *pal, shademap_t &maps)
 		byte a = maps.ramp[l * 255 / NUMCOLORMAPS];
 
 		DoBlending          (pal->basecolors, colors, pal->numcolors, r, g, b, a);
-		DoBlendingWithGamma (pal->basecolors, maps.shademap + (l << pal->shadeshift), pal->numcolors, r, g, b, a);
+		DoBlendingWithGamma (colors, maps.shademap + (l << pal->shadeshift), pal->numcolors, r, g, b, a);
 
 		color = maps.colormap + (l << pal->shadeshift);
 		for (c = 0; c < pal->numcolors; c++)
@@ -555,7 +555,7 @@ void BuildDefaultShademap (palette_t *pal, shademap_t &maps)
 		byte a = maps.ramp[l * 255 / NUMCOLORMAPS];
 
 		DoBlending          (pal->basecolors, colors, pal->numcolors, r, g, b, a);
-		DoBlendingWithGamma (pal->basecolors, maps.shademap + (l << pal->shadeshift), pal->numcolors, r, g, b, a);
+		DoBlendingWithGamma (colors, maps.shademap + (l << pal->shadeshift), pal->numcolors, r, g, b, a);
 	}
 
 	// build special maps (e.g. invulnerability)
