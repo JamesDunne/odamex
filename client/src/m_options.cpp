@@ -1086,8 +1086,6 @@ void M_OptInit (void)
 		currval++;
 	}
 
-	ModesItems[VM_DEPTHITEM].b.min = (float)currval;
-
 	switch (I_DisplayType ())
 	{
 	case DISPLAY_FullscreenOnly:
