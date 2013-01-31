@@ -599,7 +599,7 @@ void D_DoAdvanceDemo (void)
         {
             if (screen->isProtectedRes())
             {
-                page = I_AllocateScreen (width, height, 8);
+                page = I_AllocateScreen (data->width(), data->height(), 8);
             }
             else
             {
@@ -613,26 +613,17 @@ void D_DoAdvanceDemo (void)
         {
             page->DrawBlock (0, 0, width, height, (byte *)data);
         }
-		else
+		else if (screen->isProtectedRes())
         {
-            if (screen->isProtectedRes())
-            {
-                page->DrawPatch(data,0,0);
-            }
-            else
-            {
-                width = data->width();
-                height = data->height();
-                // [ML] We need a better, concise way to determine 4:3 or not...                
-                if ((float)screen->width/screen->height < (float)4.0f/3.0f)
-                {
-                    page->DrawPatchStretched (data, 0, (screen->height / 2) - ((height * RealYfac) / 2), screen->width, (height * RealYfac));
-                }
-                else
-                {
-                    page->DrawPatchStretched (data, (screen->width / 2) - ((width * RealXfac) / 2), 0, (width * RealXfac), screen->height);
-                }
-            }
+            page->DrawPatch(data,0,0);
+        }
+        else if ((float)screen->width/screen->height < (float)4.0f/3.0f)
+        {
+            page->DrawPatchStretched (data, 0, (screen->height / 2) - ((height * RealYfac) / 2), screen->width, (height * RealYfac));
+        }
+        else
+        {
+            page->DrawPatchStretched (data, (screen->width / 2) - ((width * RealXfac) / 2), 0, (width * RealXfac), screen->height);
         }
 
 		page->Unlock ();
