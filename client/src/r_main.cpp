@@ -60,6 +60,9 @@ EXTERN_CVAR (sv_allowwidescreen)
 static float	LastFOV = 0.0f;
 fixed_t			FocalLengthX;
 fixed_t			FocalLengthY;
+double			xfoc;		// FIXED2DOUBLE(FocalLengthX)
+double			yfoc;		// FIXED2DOUBLE(FocalLengthY)
+fixed_t			fovtan;
 double			focratio;
 double			ifocratio;
 int 			viewangleoffset = 0;
@@ -161,24 +164,11 @@ int CorrectFieldOfView = 2048;
 // Returns side 0 (front) or 1 (back).
 //
 // killough 5/2/98: reformatted
+// [SL] 2013-02-06 - Changed to use cross product a la ZDoom
 //
-//
-
-int R_PointOnSide (fixed_t x, fixed_t y, node_t *node)
+int R_PointOnSide(fixed_t x, fixed_t y, const node_t *node)
 {
-	if (!node->dx)
-		return x <= node->x ? node->dy > 0 : node->dy < 0;
-
-	if (!node->dy)
-		return y <= node->y ? node->dx < 0 : node->dx > 0;
-
-	x -= node->x;
-	y -= node->y;
-
-	// Try to quickly decide by looking at sign bits.
-	if ((node->dy ^ node->dx ^ x ^ y) < 0)
-		return (node->dy ^ x) < 0;  // (left is negative)
-	return FixedMul (y, node->dx >> FRACBITS) >= FixedMul (node->dy >> FRACBITS, x);
+	return int64_t(y - node->y) * node->dx + int64_t(node->x - x) * node->dy >= 0;
 }
 
 //
@@ -188,29 +178,12 @@ int R_PointOnSide (fixed_t x, fixed_t y, node_t *node)
 // Same, except takes a lineseg as input instead of a linedef
 //
 // killough 5/2/98: reformatted
+// [SL] 2013-02-06 - Changed to use cross product a la ZDoom
 //
-//
-
-int R_PointOnSegSide (fixed_t x, fixed_t y, seg_t *line)
+int R_PointOnSegSide (fixed_t x, fixed_t y, const seg_t *line)
 {
-	fixed_t lx = line->v1->x;
-	fixed_t ly = line->v1->y;
-	fixed_t ldx = line->v2->x - lx;
-	fixed_t ldy = line->v2->y - ly;
-
-	if (!ldx)
-		return x <= lx ? ldy > 0 : ldy < 0;
-
-	if (!ldy)
-		return y <= ly ? ldx < 0 : ldx > 0;
-
-	x -= lx;
-	y -= ly;
-
-	// Try to quickly decide by looking at sign bits.
-	if ((ldy ^ ldx ^ x ^ y) < 0)
-		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul (y, ldx >> FRACBITS) >= FixedMul (ldy >> FRACBITS, x);
+	return int64_t(line->v2->x - line->v1->x) * (y - line->v1->y) -
+			int64_t(line->v2->y - line->v1->y) * (x - line->v1->x) >= 0;
 }
 
 #define R_P2ATHRESHOLD (INT_MAX / 4)
@@ -386,39 +359,6 @@ fixed_t R_PointToDist2 (fixed_t dx, fixed_t dy)
 	return FixedDiv (dx, finecosine[tantoangle[FixedDiv (dy, dx) >> DBITS] >> ANGLETOFINESHIFT]);
 }
 
-//
-//
-// R_ScaleFromGlobalAngle
-//
-// Returns the texture mapping scale for the current line (horizontal span)
-// at the given angle. rw_distance must be calculated first.
-//
-//
-
-fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
-{
-	angle_t anglea = ANG90 + (visangle - viewangle);
-	angle_t angleb = ANG90 + (visangle - rw_normalangle);
-	// both sines are always positive
-	fixed_t num = FixedMul (FocalLengthY, finesine[angleb>>ANGLETOFINESHIFT]);
-	fixed_t den = FixedMul (rw_distance, finesine[anglea>>ANGLETOFINESHIFT]);
-
-	static const fixed_t maxscale = 256 << FRACBITS;
-	static const fixed_t minscale = 64;
-
-	if (den == 0)
-		return maxscale;
-
-	fixed_t scale = FixedDiv(num, den);
-	if (scale > maxscale)
-		scale = maxscale;
-	else if (scale < minscale)
-		scale = minscale;
-
-	return scale;
-}
-
-
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
@@ -428,75 +368,18 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
 }
 
-//
-// R_ColumnToPointOnSeg
-//
-// Sets the x and y parameters to their respective values at the point
-// where line intersects with a ray drawn through the column on the screen
-// projection.  Uses parametric line equations to find the point of intercept.
-//
-void R_ColumnToPointOnSeg(int column, line_t *line, fixed_t &x, fixed_t &y)
+void R_ClipEndPoints(
+	fixed_t x1, fixed_t y1,
+	fixed_t x2, fixed_t y2,
+	fixed_t lclip1, fixed_t lclip2,
+	fixed_t &cx1, fixed_t &cy1,
+	fixed_t &cx2, fixed_t &cy2)
 {
-	// Transform the end points of the seg in relation to the camera position
-	fixed_t dx1 = line->v1->x - viewx;
-	fixed_t dy1 = line->v1->y - viewy;
-	fixed_t dx2 = line->v2->x - viewx;
-	fixed_t dy2 = line->v2->y - viewy;
-
-	// Rotate the end points by viewangle
-	angle_t rotation_ang1 = (angle_t)(-(int)viewangle);
-	fixed_t x1, y1, x2, y2;
-	R_RotatePoint(dx1, dy1, rotation_ang1, x1, y1);
-	R_RotatePoint(dx2, dy2, rotation_ang1, x2, y2);
-
-	// (fx1, fy1) and (fx2, fy2) are the end points for the lineseg
-	float fx1 = FIXED2FLOAT(x1), fx2 = FIXED2FLOAT(x2);
-	float fy1 = FIXED2FLOAT(y1), fy2 = FIXED2FLOAT(y2);
-
-	// (fx3, fy3) and (fx4, fy4) are two points on a line from the origin
-	// through the screen column
-	angle_t ang = xtoviewangle[column];
-	float fx3 = 0.0f, fx4 = FIXED2FLOAT(finecosine[ang >> ANGLETOFINESHIFT]);
-	float fy3 = 0.0f, fy4 = FIXED2FLOAT(finesine[ang >> ANGLETOFINESHIFT]);
-
-	// (xint, yint) is the point where the line from the viewpoint intersects
-	// the lineseg
-	fixed_t xint, yint;
-
-	float tnum = (fx4 - fx3) * (fy1 - fy3) - (fy4 - fy3) * (fx1 - fx3);
-	float tden = (fy4 - fy3) * (fx2 - fx1) - (fx4 - fx3) * (fy2 - fy1);
-
-	if (fabs(tden) > 0.0f)
-	{
-		float t = tnum / tden;
-
-		xint = FLOAT2FIXED(fx1 + t * (fx2 - fx1));
-		yint = FLOAT2FIXED(fy1 + t * (fy2 - fy1));
-	}
-	else
-	{
-		// the lineseg and the line from viewpoint are parallel
-		// just give the closest endpoint of the lineseg
-		float dist1 = sqrtf(fx1 * fx1 + fy1 * fy1);
-		float dist2 = sqrtf(fx2 * fx2 + fy2 * fy2);
-		if (dist1 <= dist2)
-		{
-			xint = FLOAT2FIXED(fx1);
-			yint = FLOAT2FIXED(fy1);
-		}
-		else
-		{
-			xint = FLOAT2FIXED(fx2);
-			yint = FLOAT2FIXED(fy2);
-		}
-	}
-
-	// rotate (x, y) back by +viewangle to translate back to camera space
-	angle_t rotation_ang2 = viewangle;
-	R_RotatePoint(xint, yint, rotation_ang2, x, y);
-	x += viewx;
-	y += viewy;
-} 
+	cx1 = FixedMul(FRACUNIT - lclip1, x1) + FixedMul(lclip1, x2);
+	cy1 = FixedMul(FRACUNIT - lclip1, y1) + FixedMul(lclip1, y2);
+	cx2 = FixedMul(FRACUNIT - lclip2, x1) + FixedMul(lclip2, x2);
+	cy2 = FixedMul(FRACUNIT - lclip2, y1) + FixedMul(lclip2, y2);
+}
 
 //
 //
@@ -545,13 +428,16 @@ void R_InitTextureMapping (void)
 	const fixed_t hitan = finetangent[FINEANGLES/4+CorrectFieldOfView/2];
 	const fixed_t lotan = finetangent[FINEANGLES/4-CorrectFieldOfView/2];
 	const int highend = viewwidth + 1;
+	fovtan = hitan; 
 
 	// Calc focallength so FieldOfView angles covers viewwidth.
 	FocalLengthX = FixedDiv (centerxfrac, hitan);
 	FocalLengthY = FixedDiv (FixedMul (centerxfrac, yaspectmul), hitan);
+	xfoc = FIXED2DOUBLE(FocalLengthX);
+	yfoc = FIXED2DOUBLE(FocalLengthY);
 
-	focratio = double(FocalLengthY) / double(FocalLengthX);
-	ifocratio = double(FocalLengthX) / double(FocalLengthY);
+	focratio = yfoc / xfoc;
+	ifocratio = xfoc / yfoc;
 
 	for (i = 0; i < FINEANGLES/2; i++)
 	{
@@ -871,13 +757,6 @@ void R_ExecuteSetViewSize (void)
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
 		screenheightarray[i] = (int)viewheight;
-
-	// planes
-	for (i = 0; i < viewwidth; i++)
-	{
-		fixed_t cosadj = abs (finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
-		distscale[i] = FixedDiv (FRACUNIT, cosadj);
-	}
 
 	// Calculate the light levels to use for each level / scale combination.
 	// [RH] This just stores indices into the colormap rather than pointers to a specific one.

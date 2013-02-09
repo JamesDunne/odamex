@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
+#include <math.h>
 #include "m_alloc.h"
 #include "doomdef.h"
 #include "m_bbox.h"
@@ -31,6 +31,7 @@
 #include "r_draw.h"
 #include "r_things.h"
 #include "p_local.h"
+#include "vectors.h"
 
 // State.
 #include "doomstat.h"
@@ -64,8 +65,12 @@ fixed_t			rw_frontfz1, rw_frontfz2;
 int rw_start, rw_stop;
 
 static BYTE		FakeSide;
+extern fixed_t FocalLengthX;
+extern fixed_t fovtan;
 
 void R_StoreWallRange(int start, int stop);
+
+const fixed_t NEARCLIP = 0.05*FRACUNIT;
 
 //
 // R_ClearDrawSegs
@@ -345,7 +350,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		// Replace floor and ceiling height with control sector's heights.
 		if (diffTex)
 		{
-			
 			if (CopyPlaneIfValid (&tempsec->floorplane, &s->floorplane, &sec->ceilingplane))
 				tempsec->floorpic = s->floorpic;
 			else if (s->MoreFlags & SECF_FAKEFLOORONLY)
@@ -378,8 +382,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		// sectors at the same time.
 		if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL)
 		{
-			if (rw_frontcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
-				rw_frontcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
+			fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
+			fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);
+			if (fcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
+				fcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
 			{
 				// Check that the window is actually visible
 				for (int z = rw_start; z < rw_stop; z++)
@@ -518,6 +524,101 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	return sec;
 }
 
+//
+// R_ClipLine
+//
+// Clips a line defined by (px1, py1) and (px2, py2) to the viewing window.
+// It calculates lclip1 and lclip2, which represent the percentage the left
+// and right vertices are clipped. The screen columns the line encompasses,
+// x1 and x2 are also calculated. The function returns false if the line
+// is completely clipped.
+//
+static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
+					fixed_t &lclip1, fixed_t &lclip2,
+					int &x1, int &x2)
+{
+	lclip1 = 0;
+	lclip2 = FRACUNIT;
+
+	v2fixed_t t1, t2;
+	R_RotatePoint(px1 - viewx, py1 - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint(px2 - viewx, py2 - viewy, ANG90 - viewangle, t2.x, t2.y);
+
+	// [SL] check if the line is behind the viewer
+	if (int64_t(t2.x - t1.x) * -t1.y - int64_t(t2.y - t1.y) * -t1.x >= 0)
+		return false;
+
+	// Clip portions of the line that are behind the view plane
+	if (t1.y <= NEARCLIP)
+	{      
+		// reject the line entirely if the whole thing is behind the view plane.
+		if (t2.y <= NEARCLIP)
+			return false;
+
+		// clip the line at the point where t1.y == nearclip
+		lclip1 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
+	}
+
+	if (t2.y <= NEARCLIP)
+	{
+		// clip the line at the point where t2.y == nearclip
+		lclip2 = FRACUNIT - FixedDiv(NEARCLIP - t2.y, t2.y - t1.y);
+	}
+
+	// clip portions of the line that extend off the sides of the screen
+	fixed_t clipline1 = FixedMul(fovtan, t1.y);		// t1.y adjusted for non-90 degree fov
+	fixed_t clipline2 = FixedMul(fovtan, t2.y);		// t2.y adjusted for non-90 degree fov
+
+	if (-t1.x > clipline1)
+	{
+		if (-t2.x > clipline2)	// entire line is off the left side of the screen
+			return false;
+
+		// clip part that is off the left side of screen
+		fixed_t den = t2.x - t1.x + clipline2 - clipline1;
+		if (den == 0)
+			return false;
+
+		lclip1 = MAX<fixed_t>(lclip1, FixedDiv(-t1.x - clipline1, den));
+	}
+
+	if (t2.x > clipline2)
+	{
+		if (t1.x > clipline1)	// entire line is off the right side of the screen
+			return false;
+
+		// clip part that is off the right side of screen
+		fixed_t den = t2.x - t1.x + clipline1 - clipline2;
+		if (den == 0)
+			return false;
+
+		lclip2 = MIN<fixed_t>(lclip2, FixedDiv(clipline1 - t1.x, den));
+	}
+
+	if (lclip1 > lclip2)
+		return false;
+
+	v2fixed_t clipt1, clipt2;
+	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
+
+	// prevent divide-by-zero due to fixed-point imprecision
+	clipt1.y = MAX<fixed_t>(NEARCLIP, clipt1.y);
+	clipt2.y = MAX<fixed_t>(NEARCLIP, clipt2.y);
+
+	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y) >> FRACBITS;
+	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) >> FRACBITS) - 1;
+
+	if (x1 < 0)
+		x1 = 0;
+	if (x2 >= viewwidth)
+		x2 = viewwidth - 1;
+
+	// Does not cross a pixel?
+	if (x1 > x2)
+		return false;
+
+	return true;
+}
 
 //
 // R_AddLine
@@ -526,86 +627,33 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 //
 void R_AddLine (seg_t *line)
 {
-	int 			x1;
-	int 			x2;
-	angle_t 		angle1;
-	angle_t 		angle2;
-	angle_t 		span;
-	angle_t 		tspan;
-	static sector_t tempsec;	// killough 3/8/98: ceiling/water hack
+	int				x1, x2;
 
 	curline = line;
 
 	// [RH] Color if not texturing line
 	dc_color = ((line - segs) & 31) * 4;
 
-	// OPTIMIZE: quickly reject orthogonal back sides.
-	angle1 = R_PointToAngle (line->v1->x, line->v1->y);
-	angle2 = R_PointToAngle (line->v2->x, line->v2->y);
+	// percentage along the length of a lineseg where v1 and v2 are clipped to respectively
+	// FRACUNIT = lineseg length
+	fixed_t	lclip1, lclip2;
 
-	// Clip to view edges.
-	// OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
-	span = angle1 - angle2;
-
-	// Back side? I.e. backface culling?
-	if (span >= ANG180)
-		return;
-
-	// Global angle needed by segcalc.
-	rw_angle1 = angle1;
-	angle1 -= viewangle;
-	angle2 -= viewangle;
-
-	tspan = angle1 + clipangle;
-	if (tspan > 2*clipangle)
-	{
-		// Totally off the left edge?
-		if (tspan - 2*clipangle >= span)
-			return;
-
-		angle1 = clipangle;
-	}
-	tspan = clipangle - angle2;
-	if (tspan > 2*clipangle)
-	{
-		// Totally off the left edge?
-		if (tspan - 2*clipangle >= span)
-			return;
-		angle2 = (unsigned) (-(int)clipangle);
-	}
-
-	// The seg is in the view range, but not necessarily visible.
-	angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-	angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-
-	// killough 1/31/98: Here is where "slime trails" can SOMETIMES occur:
-	x1 = viewangletox[angle1];
-	x2 = viewangletox[angle2];
-
-	// Does not cross a pixel?
-	if (x1 >= x2)	// killough 1/31/98 -- change == to >= for robustness
+	// Clip the wall seg to the viewing window
+	if (!R_ClipLine(line->v1->x, line->v1->y, line->v2->x, line->v2->y, lclip1, lclip2, x1, x2))
 		return;
 
 	rw_start = x1;
-	rw_stop = x2 - 1;
-	
-	rw_frontcz1 = P_CeilingHeight(line->v1->x, line->v1->y, frontsector);
-	rw_frontfz1 = P_FloorHeight(line->v1->x, line->v1->y, frontsector);
-	rw_frontcz2 = P_CeilingHeight(line->v2->x, line->v2->y, frontsector);
-	rw_frontfz2 = P_FloorHeight(line->v2->x, line->v2->y, frontsector);	
-	
-	backsector = line->backsector;
+	rw_stop = x2;
+
+	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
+	static sector_t tempsec;
+	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
+
+	R_PrepWall(line, rw_start, rw_stop, lclip1, lclip2);
+
 	// Single sided line?
 	if (!backsector)
 		goto clipsolid;
-
-	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-	backsector = R_FakeFlat (backsector, &tempsec, NULL, NULL, true);
-		
-	rw_backcz1 = P_CeilingHeight(line->v1->x, line->v1->y, backsector);
-	rw_backfz1 = P_FloorHeight(line->v1->x, line->v1->y, backsector);
-	rw_backcz2 = P_CeilingHeight(line->v2->x, line->v2->y, backsector);
-	rw_backfz2 = P_FloorHeight(line->v2->x, line->v2->y, backsector);
 
 	// [SL] Check for closed doors or other scenarios that would make this
 	// line seg solid.
@@ -687,11 +735,11 @@ void R_AddLine (seg_t *line)
 	}
 
   clippass:
-	R_ClipPassWallSegment (x1, x2-1);
+	R_ClipPassWallSegment (x1, x2);
 	return;
 
   clipsolid:
-	R_ClipSolidWallSegment (x1, x2-1);
+	R_ClipSolidWallSegment (x1, x2);
 }
 
 
