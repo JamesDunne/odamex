@@ -81,6 +81,8 @@ static int walltopf[MAXWIDTH];
 static int walltopb[MAXWIDTH];
 static int wallbottomf[MAXWIDTH];
 static int wallbottomb[MAXWIDTH];
+static int masktop[MAXWIDTH];
+static int maskbottom[MAXWIDTH];
 
 static fixed_t wallscalex[MAXWIDTH];
 static int texoffs[MAXWIDTH];
@@ -93,13 +95,62 @@ static int  	*maskedtexturecol;
 void (*R_RenderSegLoop)(void);
 void R_ColumnToPointOnSeg(int column, line_t *line, fixed_t &x, fixed_t &y);
 
+//
+// R_ScaledTextureHeight
+//
+// Returns the texture height after y-scaling has been applied
+//
 static fixed_t R_ScaledTextureHeight(int texnum)
 {
 	return FixedDiv(textureheight[texnum], texturescaley[texnum]);
 }
 
 //
-// R_StoreWallRange
+// R_OrthogonalLightnumAdjustment
+//
+int R_OrthogonalLightnumAdjustment()
+{
+	// [RH] Only do it if not foggy and allowed
+    if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
+	{
+		if (curline->linedef->slopetype == ST_HORIZONTAL)
+			return -1;
+		else if (curline->linedef->slopetype == ST_VERTICAL)
+			return 1;
+	}
+	
+return 0;	// no adjustment for diagonal lines
+}
+
+//
+// R_FillWallHeightArray
+//
+// Calculates the wall-texture screen coordinates for a span of columns.
+//
+static void R_FillWallHeightArray(
+	int *array, 
+	int start, int stop,
+	fixed_t val1, fixed_t val2, 
+	double scale1, double scale2)
+{
+	double h1 = FIXED2DOUBLE(val1 - viewz) * scale1;
+	double h2 = FIXED2DOUBLE(val2 - viewz) * scale2;
+	
+	double step = 0.0;
+	if (stop > start)
+		step = (h2 - h1) / (stop - start);
+
+	double frac = double(centery) - h1;
+
+	for (int i = start; i <= stop; i++)
+	{
+		array[i] = clamp((int)(frac + 0.5), -1, screen->height);
+		frac -= step;
+	}
+}
+
+//
+// BlastMaskedColumn
 //
 static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 {
@@ -116,27 +167,9 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 			dc_colormap = basecolormap.with(walllights[index]);	// [RH] add basecolormap
 		}
 
-		// killough 3/2/98:
-		//
-		// This calculation used to overflow and cause crashes in Doom:
-		//
-		// sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-		//
-		// This code fixes it, by using double-precision intermediate
-		// arithmetic and by skipping the drawing of 2s normals whose
-		// mapping to screen coordinates is totally out of range:
-
-		int64_t t = ((int64_t)centeryfrac << FRACBITS) -
-					(int64_t)dc_texturemid * spryscale;
-			
-		// [RH] This doesn't work properly as-is with freelook. Probably just me.
-		// [SL] Seems to work for me and prevents overflows after increasing
-		//      the max scale factor for segs.
-		// Skip if the texture is out of the screen's range	
-		if (t + (int64_t)textureheight[texnum] * spryscale >= 0 &&
-		    t < (int64_t)screen->height << (FRACBITS * 2))
+		if (maskbottom[dc_x] >= 0 && masktop[dc_x] < viewheight)
 		{
-			sprtopscreen = (fixed_t)(t >> FRACBITS);
+			sprtopscreen = masktop[dc_x] << FRACBITS;
 			dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
 			// killough 1/25/98: here's where Medusa came in, because
@@ -155,25 +188,6 @@ static void BlastMaskedColumn (void (*blastfunc)(tallpost_t *post), int texnum)
 	}
 	spryscale += rw_scalestep;
 	rw_light += rw_lightstep;
-}
-
-
-//
-// R_OrthogonalLightnumAdjustment
-//
-
-int R_OrthogonalLightnumAdjustment()
-{
-	// [RH] Only do it if not foggy and allowed
-    if (!foggy && !(level.flags & LEVEL_EVENLIGHTING))
-	{
-		if (curline->linedef->slopetype == ST_HORIZONTAL)
-			return -1;
-		else if (curline->linedef->slopetype == ST_VERTICAL)
-			return 1;
-	}
-
-	return 0;	// no adjustment for diagonal lines
 }
 
 //
@@ -215,6 +229,29 @@ R_RenderMaskedSegRange
 
 	texnum = texturetranslation[curline->sidedef->midtexture];
 
+	// find texture positioning
+	fixed_t top, bottom;
+	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
+		top = MAX<fixed_t>(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + R_ScaledTextureHeight(texnum);
+	else
+		top = MIN<fixed_t>(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
+	bottom = top - R_ScaledTextureHeight(texnum);
+
+	dc_texturemid = FixedMul(top - viewz + curline->sidedef->rowoffset, texturescaley[texnum]);
+	
+	// project the top and bottom of the texture along the length of the seg
+	double fscale1 = FIXED2DOUBLE(ds->scale1);
+	double fscale2 = FIXED2DOUBLE(ds->scale2);
+	R_FillWallHeightArray(masktop, ds->x1, ds->x2, top, top, fscale1, fscale2);
+	R_FillWallHeightArray(maskbottom, ds->x1, ds->x2, bottom, bottom, fscale1, fscale2);	
+
+	// bottom of texture entirely above screen?
+	if (maskbottom[x1] < 0 && maskbottom[x2] < 0)
+		return;
+	// top of texture entirely below screen?
+	if (masktop[x1] >= viewheight && masktop[x2] >= viewheight)
+		return;
+
 	basecolormap = frontsector->floorcolormap->maps;	// [RH] Set basecolormap
 
 	// killough 4/13/98: get correct lightlevel for 2s normal textures
@@ -237,26 +274,6 @@ R_RenderMaskedSegRange
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
-
-	// find positioning
-	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-	{
-		fixed_t ff = P_FloorHeight(frontsector);
-		fixed_t bf = P_FloorHeight(backsector);
-
-		dc_texturemid = ff > bf ? ff : bf;
-		dc_texturemid += R_ScaledTextureHeight(texnum) - viewz;
-	}
-	else
-	{
-		fixed_t fc = P_CeilingHeight(frontsector);
-		fixed_t bc = P_CeilingHeight(backsector);
-
-		dc_texturemid = fc < bc ? fc : bc;
-		dc_texturemid -= viewz;
-	}
-	dc_texturemid = FixedMul(dc_texturemid + curline->sidedef->rowoffset, 
-							 texturescaley[texnum]);
 
 	if (fixedlightlev)
 		dc_colormap = basecolormap.with(fixedlightlev);
@@ -634,35 +651,6 @@ static void R_AdjustOpenings(int start, int stop)
 }
 
 //
-// R_FillWallHeightArray
-//
-// Calculates the wall-texture screen coordinates for a span of columns.
-//
-static void R_FillWallHeightArray(
-	int *array, 
-	int start, int stop,
-	fixed_t val1, fixed_t val2, 
-	double scale1, double scale2)
-{
-	double h1 = FIXED2DOUBLE(val1 - viewz) * scale1;
-	double h2 = FIXED2DOUBLE(val2 - viewz) * scale2;
-	
-	double step = 0.0;
-	if (stop > start)
-		step = (h2 - h1) / (stop - start);
-
-	double frac = double(centery) - h1;
-
-	for (int i = start; i <= stop; i++)
-	{
-		array[i] = (int)frac;
-		clamp(array[i], 0, screen->height - 1);
-
-		frac -= step;
-	}
-}
-
-//
 // R_PrepWall
 //
 // Prepares a lineseg for rendering. It fills the walltopf, wallbottomf,
@@ -693,8 +681,8 @@ void R_PrepWall(seg_t *line, int start, int stop, fixed_t lclip1, fixed_t lclip2
 
 	const fixed_t mindist = 0.25*FRACUNIT;
 	const fixed_t maxdist = 16384*FRACUNIT;
-	clamp(dist1, mindist, maxdist);
-	clamp(dist2, mindist, maxdist);
+	dist1 = clamp(dist1, mindist, maxdist);
+	dist2 = clamp(dist2, mindist, maxdist);
 
 	// calculate texture coordinates at the line's endpoints
 	double scale1 = yfoc / FIXED2DOUBLE(dist1);

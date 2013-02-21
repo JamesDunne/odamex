@@ -534,35 +534,35 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 // is completely clipped.
 //
 static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
-					fixed_t &lclip1, fixed_t &lclip2,
+					fixed_t clipdist, fixed_t &lclip1, fixed_t &lclip2,
 					int &x1, int &x2)
 {
 	lclip1 = 0;
 	lclip2 = FRACUNIT;
 
+	// [SL] check if the line is behind the viewer
+	if (R_PointOnSide(viewx, viewy, px1, py1, px2, py2) == 1)
+		return false;
+
 	v2fixed_t t1, t2;
 	R_RotatePoint(px1 - viewx, py1 - viewy, ANG90 - viewangle, t1.x, t1.y);
 	R_RotatePoint(px2 - viewx, py2 - viewy, ANG90 - viewangle, t2.x, t2.y);
 
-	// [SL] check if the line is behind the viewer
-	if (int64_t(t2.x - t1.x) * -t1.y - int64_t(t2.y - t1.y) * -t1.x >= 0)
-		return false;
-
 	// Clip portions of the line that are behind the view plane
-	if (t1.y <= NEARCLIP)
+	if (t1.y < clipdist)
 	{      
 		// reject the line entirely if the whole thing is behind the view plane.
-		if (t2.y <= NEARCLIP)
+		if (t2.y < clipdist)
 			return false;
 
-		// clip the line at the point where t1.y == nearclip
-		lclip1 = FixedDiv(NEARCLIP - t1.y, t2.y - t1.y);
+		// clip the line at the point where t1.y == clipdist
+		lclip1 = FixedDiv(clipdist - t1.y, t2.y - t1.y);
 	}
 
-	if (t2.y <= NEARCLIP)
+	if (t2.y < clipdist)
 	{
-		// clip the line at the point where t2.y == nearclip
-		lclip2 = FRACUNIT - FixedDiv(NEARCLIP - t2.y, t2.y - t1.y);
+		// clip the line at the point where t2.y == clipdist
+		lclip2 = FRACUNIT - FixedDiv(clipdist - t2.y, t2.y - t1.y);
 	}
 
 	// clip portions of the line that extend off the sides of the screen
@@ -601,12 +601,12 @@ static bool R_ClipLine(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	v2fixed_t clipt1, clipt2;
 	R_ClipEndPoints(t1.x, t1.y, t2.x, t2.y, lclip1, lclip2, clipt1.x, clipt1.y, clipt2.x, clipt2.y);
 
-	// prevent divide-by-zero due to fixed-point imprecision
-	clipt1.y = MAX<fixed_t>(NEARCLIP, clipt1.y);
-	clipt2.y = MAX<fixed_t>(NEARCLIP, clipt2.y);
+	// prevent divide-by-zero
+	clipt1.y = MAX<fixed_t>(1, clipt1.y);
+	clipt2.y = MAX<fixed_t>(1, clipt2.y);
 
-	x1 = (centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y) >> FRACBITS;
-	x2 = ((centerxfrac + FRACUNIT/2 + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) >> FRACBITS) - 1;
+	x1 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * clipt1.x) / clipt1.y);
+	x2 = FIXED2INT(centerxfrac + (int64_t(FocalLengthX) * clipt2.x) / clipt2.y) - 1;
 
 	if (x1 < 0)
 		x1 = 0;
@@ -639,7 +639,7 @@ void R_AddLine (seg_t *line)
 	fixed_t	lclip1, lclip2;
 
 	// Clip the wall seg to the viewing window
-	if (!R_ClipLine(line->v1->x, line->v1->y, line->v2->x, line->v2->y, lclip1, lclip2, x1, x2))
+	if (!R_ClipLine(line->v1->x, line->v1->y, line->v2->x, line->v2->y, NEARCLIP, lclip1, lclip2, x1, x2))
 		return;
 
 	rw_start = x1;
@@ -743,12 +743,6 @@ void R_AddLine (seg_t *line)
 }
 
 
-//
-// R_CheckBBox
-// Checks BSP node/subtree bounding box.
-// Returns true
-//	if some part of the bbox might be visible.
-//
 static const int checkcoord[12][4] = // killough -- static const
 {
 	{3,0,2,1},
@@ -764,110 +758,55 @@ static const int checkcoord[12][4] = // killough -- static const
 	{2,1,3,0}
 };
 
-
-static BOOL R_CheckBBox (fixed_t *bspcoord)	// killough 1/28/98: static
+//
+// R_CheckBBox
+//
+// Checks BSP node/subtree bounding box.
+// Returns true if some part of the bbox might be visible.
+//
+// killough 1/28/98: static
+// CPhipps - const parameter, reformatted
+// [SL] Changed to use R_LineClip()
+//
+static BOOL R_CheckBBox(const fixed_t *bspcoord)
 {
-	int 				boxx;
-	int 				boxy;
-	int 				boxpos;
-
-	fixed_t 			x1;
-	fixed_t 			y1;
-	fixed_t 			x2;
-	fixed_t 			y2;
-
-	angle_t 			angle1;
-	angle_t 			angle2;
-	angle_t 			span;
-	angle_t 			tspan;
-
-	cliprange_t*		start;
-
-	int 				sx1;
-	int 				sx2;
+	int 				x1, x2;
+	fixed_t				lclip1, lclip2;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
-	if (viewx <= bspcoord[BOXLEFT])
-		boxx = 0;
-	else if (viewx < bspcoord[BOXRIGHT])
-		boxx = 1;
-	else
-		boxx = 2;
+	int boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
+				(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
-	if (viewy >= bspcoord[BOXTOP])
-		boxy = 0;
-	else if (viewy > bspcoord[BOXBOTTOM])
-		boxy = 1;
-	else
-		boxy = 2;
-
-	boxpos = (boxy<<2)+boxx;
 	if (boxpos == 5)
 		return true;
 
-	x1 = bspcoord[checkcoord[boxpos][0]];
-	y1 = bspcoord[checkcoord[boxpos][1]];
-	x2 = bspcoord[checkcoord[boxpos][2]];
-	y2 = bspcoord[checkcoord[boxpos][3]];
+	fixed_t xl = bspcoord[checkcoord[boxpos][0]];
+	fixed_t yl = bspcoord[checkcoord[boxpos][1]];
+	fixed_t xh = bspcoord[checkcoord[boxpos][2]];
+	fixed_t yh = bspcoord[checkcoord[boxpos][3]];
 
-	// check clip list for an open space
-	angle1 = R_PointToAngle (x1, y1) - viewangle;
-	angle2 = R_PointToAngle (x2, y2) - viewangle;
-
-	span = angle1 - angle2;
-
-	// Sitting on a line?
-	if (span >= ANG180)
+	if (R_PointOnSide(viewx, viewx, xl, yl, xh, yh) == 1)
 		return true;
 
-	tspan = angle1 + clipangle;
-
-	if (tspan > 2*clipangle)
-	{
-		tspan -= 2*clipangle;
-
-		// Totally off the left edge?
-		if (tspan >= span)
-			return false;
-
-		angle1 = clipangle;
-	}
-	tspan = clipangle - angle2;
-	if (tspan > 2*clipangle)
-	{
-		tspan -= 2*clipangle;
-
-		// Totally off the left edge?
-		if (tspan >= span)
-			return false;
-
-		angle2 = (unsigned)(-(int)clipangle);
-	}
-
-	// Find the first clippost
-	//	that touches the source post
-	//	(adjacent pixels are touching).
-	angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-	angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-	sx1 = viewangletox[angle1];
-	sx2 = viewangletox[angle2];
-
-	// Does not cross a pixel.
-	if (sx1 == sx2)
+	// check if part of the bounding box is within the viewing window
+	// and calculate x1 and x2.
+	//
+	// We pass R_ClipLine the bounding-box's diagonals. If both
+	// diagonals are entirely clipped, then none of the bounding box
+	// is in the viewing window.
+	//
+	if (!R_ClipLine(xl, yl, xh, yh, 0, lclip1, lclip2, x1, x2) &&
+		!R_ClipLine(xl, yh, xh, yl, 0, lclip1, lclip2, x1, x2))
 		return false;
-	sx2--;
 
-	start = solidsegs;
-	while (start->last < sx2)
+	cliprange_t* start = solidsegs;
+	while (start->last < x2)
 		start++;
 
-        if (sx1 >= start->first
-            && sx2 <= start->last)
-	{
-		// The clippost contains the new span.
+	// does the clippost contains the new span?
+	if (x1 >= start->first && x2 <= start->last)
 		return false;
-	}
 
 	return true;
 }
@@ -976,12 +915,10 @@ void R_Subsector (int num)
 }
 
 
-
-
 //
 // RenderBSPNode
-// Renders all subsectors below a given node,
-//	traversing subtree recursively.
+//
+// Renders all subsectors below a given node, traversing subtree recursively.
 // Just call with BSP root.
 // killough 5/2/98: reformatted, removed tail recursion
 
@@ -992,17 +929,19 @@ void R_RenderBSPNode (int bspnum)
 		node_t *bsp = &nodes[bspnum];
 
 		// Decide which side the view point is on.
-		int side = R_PointOnSide(viewx, viewy, bsp);
+		int frontside = R_PointOnSide(viewx, viewy, bsp);
+		int backside = frontside ^ 1;
 
 		// Recursively divide front space.
-		R_RenderBSPNode(bsp->children[side]);
+		R_RenderBSPNode(bsp->children[frontside]);
 
 		// Possibly divide back space.
-		if (!R_CheckBBox(bsp->bbox[side^1]))
+		if (!R_CheckBBox(bsp->bbox[backside]))
 			return;
 
-		bspnum = bsp->children[side^1];
+		bspnum = bsp->children[backside];
 	}
+
 	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 

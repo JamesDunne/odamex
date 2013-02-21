@@ -101,7 +101,6 @@ AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
 //
 // precalculated math tables
 //
-angle_t 		clipangle;
 
 // The viewangletox[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
@@ -160,6 +159,18 @@ int CorrectFieldOfView = 2048;
 //
 // R_PointOnSide
 //
+// Determines which side of a line the point (x, y) is on.
+// Returns side 0 (front) or 1 (back) 
+//
+int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh)
+{
+	return int64_t(xh - xl) * (y - yl) - int64_t(yh - yl) * (x - xl) >= 0;
+}
+
+//
+//
+// R_PointOnSide
+//
 // Traverse BSP (sub) tree, check point against partition plane.
 // Returns side 0 (front) or 1 (back).
 //
@@ -168,7 +179,7 @@ int CorrectFieldOfView = 2048;
 //
 int R_PointOnSide(fixed_t x, fixed_t y, const node_t *node)
 {
-	return int64_t(y - node->y) * node->dx + int64_t(node->x - x) * node->dy >= 0;
+	return R_PointOnSide(x, y, node->x, node->y, node->x + node->dx, node->y + node->dy); 
 }
 
 //
@@ -182,8 +193,7 @@ int R_PointOnSide(fixed_t x, fixed_t y, const node_t *node)
 //
 int R_PointOnSegSide (fixed_t x, fixed_t y, const seg_t *line)
 {
-	return int64_t(line->v2->x - line->v1->x) * (y - line->v1->y) -
-			int64_t(line->v2->y - line->v1->y) * (x - line->v1->x) >= 0;
+	return R_PointOnSide(x, y, line->v1->x, line->v1->y, line->v2->x, line->v2->y);
 }
 
 #define R_P2ATHRESHOLD (INT_MAX / 4)
@@ -481,8 +491,6 @@ void R_InitTextureMapping (void)
 		else if (viewangletox[i] == highend)
 			viewangletox[i]--;
 	}
-
-	clipangle = xtoviewangle[0];
 }
 
 // Changes the field of view.
