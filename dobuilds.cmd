@@ -1,13 +1,13 @@
 @echo off
 SET BRANCH=32bpp-persdiv
+SET CONFIGURATION=RelWithDebInfo
 
 SET MSBUILD=C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe
 SET ZIP7="C:\Program Files\7-zip\7z.exe"
 
-PUSHD \git\odamex\
 
-echo Checking out branch %BRANCH%
-"C:\cygwin\bin\git.exe" checkout -f %BRANCH%
+echo Building branch %BRANCH%
+
 
 echo Determining git revision...
 SET REVISION=
@@ -20,30 +20,44 @@ echo Git revision %REVISION%
 
 SET ZIPBASE=%BRANCH%-%REVISION%
 
-echo Building 64-bit release...
 
-PUSHD \git\odamex\build64\client
-%MSBUILD% odamex.vcxproj /m /p:Configuration=RelWithDebInfo
-CD RelWithDebInfo
+echo Building x64 release...
+
+PUSHD build64\client
+%MSBUILD% odamex.vcxproj /m /p:Configuration=%CONFIGURATION%
+IF NOT %ERRORLEVEL% EQU 0 GOTO fail
+
+CD %CONFIGURATION%
 COPY ..\..\..\README-32bpp .
 DEL /F %ZIPBASE%-x64.zip
 %ZIP7% a %ZIPBASE%-x64.zip "odamex.exe" "README-32bpp"
-"C:\cygwin\bin\scp.exe" "%ZIPBASE%-x64.zip" bit:/home/ftp/jim/software/odamex/%BRANCH%/
-REM START .
 POPD
 
-echo Building 32-bit release...
 
-PUSHD \git\odamex\build32\client
-%MSBUILD% odamex.vcxproj /m /p:Configuration=RelWithDebInfo
-CD RelWithDebInfo
+echo Building x86 release...
+
+PUSHD build32\client
+%MSBUILD% odamex.vcxproj /m /p:Configuration=%CONFIGURATION%
+IF NOT %ERRORLEVEL% EQU 0 GOTO fail
+
+CD %CONFIGURATION%
 COPY ..\..\..\README-32bpp .
 DEL /F %ZIPBASE%-x86.zip
 %ZIP7% a %ZIPBASE%-x86.zip "odamex.exe" "README-32bpp"
-"C:\cygwin\bin\scp.exe" "%ZIPBASE%-x86.zip" bit:/home/ftp/jim/software/odamex/%BRANCH%/
-REM START .
 POPD
 
-POPD
+echo Copying ZIPs to server...
 
-echo Done
+"C:\cygwin\bin\scp.exe" "build64/client/%CONFIGURATION%/%ZIPBASE%-x64.zip" "bit:/home/ftp/jim/software/odamex/%BRANCH%/%ZIPBASE%-x64.zip"
+"C:\cygwin\bin\scp.exe" "build32/client/%CONFIGURATION%/%ZIPBASE%-x86.zip" "bit:/home/ftp/jim/software/odamex/%BRANCH%/%ZIPBASE%-x86.zip"
+
+goto good
+
+:fail
+echo Build Failed!
+goto done
+
+:good
+echo Succeeded!
+
+:done
