@@ -1088,7 +1088,7 @@ void G_InitLevelLocals ()
 		strncpy (level.skypic2, pinfo->skypic2, 8);
 		level.fadeto = pinfo->fadeto;
 		if (level.fadeto) {
-			NormalLight.maps = shaderef_t(&DefaultPalette->maps, 0);
+			NormalLight.maps = shaderef_t(&GetDefaultPalette()->maps, 0);
 		} else {
 			R_ForceDefaultColormap (pinfo->fadetable);
 		}

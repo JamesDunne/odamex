@@ -556,7 +556,7 @@ am_color_t AM_BestColor(argb_t *palette, const int r, const int g, const int b, 
 void AM_initColors (BOOL overlayed)
 {
 	// Look up the colors in the current palette:
-	argb_t *palette = DefaultPalette->colors;
+	argb_t *palette = GetDefaultPalette()->colors;
 
 	if (overlayed && !am_ovshare)
 	{
@@ -1308,6 +1308,8 @@ void AM_drawWalls(void)
 	int i, r, g, b;
 	static mline_t l;
 	float rdif, gdif, bdif;
+	palette_t *pal = GetDefaultPalette();
+
 
 	for (i=0;i<numlines;i++) {
 		l.a.x = lines[i].v1->x;
@@ -1377,20 +1379,20 @@ void AM_drawWalls(void)
                         }
 
                         if (lockglow < 30) {
-                            AM_drawMline (&l, AM_BestColor (DefaultPalette->basecolors, r + ((int)rdif*lockglow),
+                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r + ((int)rdif*lockglow),
                                           g + ((int)gdif*lockglow), b + ((int)bdif*lockglow),
-                                          DefaultPalette->numcolors));
+                                          pal->numcolors));
                         } else if (lockglow < 60) {
-                            AM_drawMline (&l, AM_BestColor (DefaultPalette->basecolors, r + ((int)rdif*(60-lockglow)),
+                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r + ((int)rdif*(60-lockglow)),
                                           g + ((int)gdif*(60-lockglow)), b + ((int)bdif*(60-lockglow)),
-                                          DefaultPalette->numcolors));
+                                          pal->numcolors));
                         } else {
-                            AM_drawMline (&l, AM_BestColor (DefaultPalette->basecolors, r, g, b,
-                                          DefaultPalette->numcolors));
+                            AM_drawMline (&l, AM_BestColor (pal->basecolors, r, g, b,
+                                          pal->numcolors));
                         }
 				    } else {
-                        AM_drawMline (&l, AM_BestColor (DefaultPalette->basecolors, r, g, b,
-                                      DefaultPalette->numcolors));
+                        AM_drawMline (&l, AM_BestColor (pal->basecolors, r, g, b,
+                                      pal->numcolors));
                     }
                 }
 				else if (lines[i].backsector->floorheight
@@ -1504,7 +1506,7 @@ void AM_drawPlayers(void)
 	size_t i;
 	player_t &conplayer = displayplayer();
 	argb_t *palette;
-	palette = DefaultPalette->colors;
+	palette = GetDefaultPalette()->colors;
 
 	if (!multiplayer)
 	{
@@ -1552,11 +1554,11 @@ void AM_drawPlayers(void)
 		} else {
 			int playercolor = CL_GetPlayerColor(p);
 			color.rgb = (argb_t)playercolor;
-			color.index = BestColor (DefaultPalette->basecolors,
+			color.index = BestColor (GetDefaultPalette()->basecolors,
 			                         RPART(playercolor),
 			                         GPART(playercolor),
 			                         BPART(playercolor),
-			                         DefaultPalette->numcolors);
+			                         GetDefaultPalette()->numcolors);
 		}
 
 		pt.x = p->mo->x;

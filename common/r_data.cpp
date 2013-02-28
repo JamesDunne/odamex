@@ -773,7 +773,7 @@ void R_ForceDefaultColormap(const char *name)
 		for (int c = 0; c < 256; ++c)
 			realcolormaps.shademap[m*256+c] = V_Palette.shade(realcolormaps.colormap[m*256+c]);
 #else
-	BuildDefaultShademap (DefaultPalette, realcolormaps);
+	BuildDefaultShademap (GetDefaultPalette(), realcolormaps);
 #endif
 
 	strncpy (fakecmaps[0].name, name, 9); // denis - todo - string limit?

@@ -1089,17 +1089,18 @@ void R_SetupFrame (player_t *player)
 
 	fixedcolormap = shaderef_t();
 	fixedlightlev = 0;
+	palette_t *pal = GetDefaultPalette();
 
 	if (camera == player->mo && player->fixedcolormap)
 	{
 		if (player->fixedcolormap < NUMCOLORMAPS)
 		{
 			fixedlightlev = player->fixedcolormap;
-			fixedcolormap = shaderef_t(&DefaultPalette->maps, 0);
+			fixedcolormap = shaderef_t(&pal->maps, 0);
 		}
 		else
 		{
-			fixedcolormap = shaderef_t(&DefaultPalette->maps, player->fixedcolormap);
+			fixedcolormap = shaderef_t(&pal->maps, player->fixedcolormap);
 		}
 
 		walllights = scalelightfixed;

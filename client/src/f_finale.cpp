@@ -653,7 +653,7 @@ void F_DrawPatchColD (int x, const patch_t *patch, int col, const DCanvas *scrn)
 	desttop = (argb_t *)scrn->buffer + x;
 	pitch = scrn->pitch / sizeof(argb_t);
 
-	shaderef_t pal = shaderef_t(&DefaultPalette->maps, 0);
+	shaderef_t pal = shaderef_t(&GetDefaultPalette()->maps, 0);
 
 	// step through the posts in a column
 	while (!post->end())

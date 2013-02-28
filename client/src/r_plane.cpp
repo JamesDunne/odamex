@@ -768,8 +768,10 @@ void R_DrawPlanes (void)
 					skyflip = l->args[2] ? 0u : ~0u;
 				}
 
+				palette_t *pal = GetDefaultPalette();
+
 				if (fixedlightlev) {
-					dc_colormap = shaderef_t(&DefaultPalette->maps, fixedlightlev);
+					dc_colormap = shaderef_t(&pal->maps, fixedlightlev);
 				} else if (fixedcolormap.isValid()) {
 					if (r_skypalette)
 					{
@@ -779,10 +781,10 @@ void R_DrawPlanes (void)
 					{
 						// [SL] 2011-06-28 - Emulate vanilla Doom's handling of skies
 						// when the player has the invulnerability powerup
-						dc_colormap = shaderef_t(&DefaultPalette->maps, 0);
+						dc_colormap = shaderef_t(&pal->maps, 0);
 					}
 				} else if (!fixedcolormap.isValid()) {
-					dc_colormap = shaderef_t(&DefaultPalette->maps, 0);
+					dc_colormap = shaderef_t(&pal->maps, 0);
 					colfunc = R_StretchColumn;
 					hcolfunc_post1 = rt_copy1col;
 					hcolfunc_post2 = rt_copy2cols;

@@ -389,6 +389,8 @@ void CTF_DrawHud (void)
 
 	if (hasflag)
 	{
+		palette_t *pal = GetDefaultPalette();
+
 		if (tintglow < 15)
 			tintglowtype = tintglow;
 		else if (tintglow < 30)
@@ -416,7 +418,7 @@ void CTF_DrawHud (void)
 		if (tintColor != 0)
 		{
 			if (screen->is8bit())
-				TintScreen(BestColor2(DefaultPalette->basecolors, tintColor, DefaultPalette->numcolors));
+				TintScreen(BestColor2(pal->basecolors, tintColor, pal->numcolors));
 			else
 				TintScreen(tintColor);
 		}

@@ -1787,7 +1787,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	else
 	{
 		vis->colormap = shaderef_t(&realcolormaps, 0);
-		//vis->colormap = shaderef_t(&DefaultPalette->maps, 0);
+		//vis->colormap = shaderef_t(&GetDefaultPalette()->maps, 0);
 	}
 }
 

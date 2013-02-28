@@ -434,8 +434,8 @@ void R_DrawFuzzColumnP (void)
 		int pitch = dc_pitch;
 		int fuzz = fuzzpos;
 
-		//byte *map = DefaultPalette->maps.colormap + 6*256;
-		shaderef_t  map(&DefaultPalette->maps, 6);
+		//byte *map = GetDefaultPalette()->maps.colormap + 6*256;
+		shaderef_t  map(&GetDefaultPalette()->maps, 6);
 
 		do 
 		{
